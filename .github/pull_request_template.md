@@ -18,6 +18,12 @@
 - [ ] Docs / Refactor / Chore → `dev`
 - [ ] Integration: `dev` → `main`
 
+## Base / Head 확인
+
+- 일반 작업: `작업 branch` → `dev`
+- 안정화 통합: 같은 Repository의 `dev` → `main`
+- `feature/*`, `fix/*`, `docs/*`, `refactor/*`, `test/*`, `chore/*` → `main` 직접 PR은 금지
+
 ## Changes
 
 -
@@ -69,4 +75,7 @@
 - [ ] 관련 문서를 갱신함
 - [ ] Secret이 포함되지 않음
 - [ ] `dev` 최신 변경사항과 충돌 여부를 확인함
+- [ ] 일반 작업 PR의 base가 `dev`임
+- [ ] `main` 대상 PR이면 head가 같은 Repository의 `dev`임
+- [ ] Required Check와 Review 조건을 우회하지 않음
 - [ ] 다른 팀원 최소 1명의 Review를 받을 준비가 됨
