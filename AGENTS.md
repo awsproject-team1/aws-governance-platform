@@ -54,12 +54,34 @@
 
 - `main`과 `dev`에서 직접 구현하거나 직접 Push하지 않는다.
 - 실제 작업은 Issue에 연결된 short-lived `type/kebab-case` branch에서 수행한다.
-- 일반 PR은 `dev`, 안정화 통합 PR만 `main`을 대상으로 한다.
+- `feature/*`, `fix/*`, `docs/*`, `refactor/*`, `test/*`, `chore/*` PR의 base는 반드시 `dev`로 설정한다.
+- `main` 대상 PR은 head가 같은 Repository의 `dev`인 안정화 통합 PR만 허용한다.
+- 작업 branch에서 `main`으로 직접 PR을 생성하거나, `main`/`dev`에 직접 Push하거나, 허용되지 않은 base/head 조합으로 Merge하는 행위를 명시적으로 금지한다.
+- PR 생성 전에 base/head를 확인한다. 잘못 생성한 `main` 대상 PR은 Merge하지 말고 닫은 뒤 `dev` 대상으로 다시 생성한다.
 - Commit은 Conventional Commits의 `feat`, `fix`, `docs`, `refactor`, `test`, `chore`를 사용한다. Scope는 선택사항이다.
 - PR에는 Related Issue, What/Why, Validation, Architecture/Contract/Security 영향을 기록한다.
 - 해당 Required CI 통과와 다른 팀원 최소 1명 승인이 있어야 Merge한다.
 - Squash Merge를 기본으로 한다.
+- GitHub의 admin/bypass 권한으로 Branch/Ruleset/Required Check/Review 조건을 우회하지 않는다.
 - 사용자의 명시적 요청 없이 commit, push, PR 생성, merge, remote 변경을 수행하지 않는다.
+
+허용되는 Platform Repository PR 경로는 아래 두 가지뿐이다.
+
+| Head | Base | 목적 |
+| --- | --- | --- |
+| short-lived 작업 branch | `dev` | 일반 개발 및 문서 변경 |
+| `dev` | `main` | 안정화 통합 |
+
+## GitHub 자동 강제 기준
+
+문서와 프롬프트는 행동 규칙이며 GitHub Merge를 기술적으로 차단하지 못한다. Repository 설정은 다음을 자동 강제해야 한다.
+
+- `main` Ruleset: Pull Request 필수, 다른 팀원 최소 1명 승인, Required Check `validate-pr-source` 통과, direct/force push와 branch deletion 차단
+- `dev` Ruleset: Pull Request 필수, 다른 팀원 최소 1명 승인, 변경 영역에 적용되는 Required CI 통과, direct/force push와 branch deletion 차단
+- `validate-pr-source`: `main` 대상 PR의 head repository가 현재 Repository이고 head branch가 정확히 `dev`인지 검사하며, 아니면 실패
+- Bypass list: 일상 개발을 위한 예외를 두지 않으며 Agent도 우회하지 않음
+
+Required Check는 PR 본문의 수동 체크박스가 아니라 GitHub Ruleset에 등록되어 실패 또는 대기 상태에서 Merge를 막는 status check다. Workflow 파일과 Ruleset 등록이 모두 있어야 자동 강제가 완성된다. 자동 강제가 아직 설정되지 않았더라도 위 금지 규칙은 그대로 적용하며, Agent는 보호 설정을 임의로 약화·삭제하거나 check 이름을 변경하지 않는다.
 
 ## 검증 기준
 
