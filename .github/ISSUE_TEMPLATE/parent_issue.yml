@@ -1,0 +1,56 @@
+name: Parent Feature
+description: A/B/C/D 영역의 목표, 범위, 진행률을 관리합니다.
+title: "[Parent] "
+labels: []
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: 영역
+      options:
+        - A — Platform / API / Auth / Data
+        - B — Governance / Policy / Knowledge
+        - C — Agent Platform / Assessment
+        - D — Remediation / IaC / GitHub / Deployment
+    validations:
+      required: true
+  - type: input
+    id: owner
+    attributes:
+      label: Owner
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: 이 Parent Feature가 제공할 기능과 사용자 가치를 작성합니다.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: 포함 및 제외 범위를 구분해 작성합니다.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: 완료를 검증할 수 있는 조건을 체크리스트로 작성합니다.
+    validations:
+      required: true
+  - type: textarea
+    id: deliverables
+    attributes:
+      label: 주요 산출물
+      description: 기능, Contract, Test, Frontend, 문서 산출물을 작성합니다.
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Depends on / Provides to를 작성합니다.
+  - type: markdown
+    attributes:
+      value: "Parent Issue에는 전용 branch/PR을 만들지 않습니다. 실제 작업은 Sub-issue로 관리합니다."
