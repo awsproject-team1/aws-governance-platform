@@ -1,0 +1,67 @@
+name: Bug Report
+description: 재현 가능한 결함을 보고합니다.
+title: "[Bug] "
+labels: []
+body:
+  - type: input
+    id: related
+    attributes:
+      label: 관련 Parent / Issue / PR
+      placeholder: "Parent # / Issue # / PR #"
+  - type: textarea
+    id: symptom
+    attributes:
+      label: 현상
+      description: 발생한 문제를 설명합니다.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 재현 방법
+      description: 순서와 필요한 입력/환경을 작성합니다.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대 결과
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 실제 결과
+      description: 오류 메시지에 Secret/민감정보를 포함하지 마세요.
+    validations:
+      required: true
+  - type: dropdown
+    id: domain
+    attributes:
+      label: Related Domain
+      multiple: true
+      options:
+        - A — Platform / API / Auth / Data
+        - B — Governance / Policy / Knowledge
+        - C — Agent Platform / Assessment
+        - D — Remediation / IaC / GitHub / Deployment
+        - Shared Contract / Integration / Docs
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: 영향 범위
+      description: 사용자, Module, Contract, 다른 Owner 영향을 작성합니다.
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Depends on / Blocks를 작성합니다.
+  - type: textarea
+    id: done
+    attributes:
+      label: Acceptance Criteria
+      description: 수정, Regression Test, dev 재현 확인 조건을 작성합니다.
+    validations:
+      required: true
