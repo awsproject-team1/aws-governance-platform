@@ -66,16 +66,17 @@ Frontend에서 메뉴를 숨기는 것만으로 권한을 통제하지 않으며
 
 ### Initial Vertical Slice
 
-최초 구현과 최종 데모는 지원 폭보다 Closed-loop 완주를 우선해 다음 범위로 고정한다.
+최초 구현과 최종 데모는 지원 폭보다 Closed-loop 완주를 우선해 S3 Public Access Block 문제 하나로 제한한다. 이 절이 고정하는 것은 제품 목표와 architecture boundary이며 실행 Rule/Control 식별자, lifecycle, Enum 또는 wire Contract가 아니다.
 
-- Governed Resource type: `aws_s3_bucket` 1종
-- Demo fixture: 취약한 S3 Bucket instance 1개
-- Global Rule: `GLOBAL-S3-PAB-001` version 1
-- Control: `s3.public_access_block.enabled`
-- Requirement: 연결된 `aws_s3_bucket_public_access_block`의 네 차단 속성이 모두 `true`
-- Remediation: companion resource 추가 또는 필요한 속성만 변경하는 최소 Terraform Patch
+- Governed Resource semantic: Terraform `aws_s3_bucket`과 Public Access Block companion
+- Demo fixture: 취약한 S3 Bucket instance 1개 계획
+- Rule candidate: S3 Public Access Block 네 설정을 모두 활성화해야 한다는 Global requirement
+- Proposed planning labels: `GLOBAL-S3-PAB-001`, `s3.public_access_block.enabled`
+- Remediation intent: companion resource 추가 또는 필요한 설정만 변경하는 최소 Terraform Patch
 
-`aws_s3_bucket_public_access_block`은 별도 평가 대상 Resource가 아니라 S3 Bucket Rule의 companion Terraform construct이자 Remediation target이다. Security Group, IAM, VPC, CloudTrail과 추가 Rule은 첫 Closed-loop가 통합 검증된 후 확장한다.
+Proposed label은 Shared Contract/Registry에 예약되지 않았고 ACTIVE Rule이 아니다. Source revision/version, 정확한 locator, retrieval timestamp, immutable content hash와 승인 대상 semantic hash가 Human Approval에 binding된 뒤에만 실행 Rule로 등록할 수 있다. 정확한 Source Reference와 Approval field는 구현 시 Producer/Consumer review로 확정한다.
+
+`aws_s3_bucket_public_access_block`은 별도 평가 대상 Resource가 아니라 S3 Bucket Rule candidate의 companion Terraform construct이자 Remediation target이다. Security Group, IAM, VPC, CloudTrail과 추가 Rule은 첫 Closed-loop가 통합 검증된 후 확장한다.
 
 ## 주요 User Flow
 
@@ -87,7 +88,7 @@ Frontend에서 메뉴를 숨기는 것만으로 권한을 통제하지 않으며
 
 Admin이 관리한 Policy Profile과 고객 Repository를 User가 선택한다. 시스템은 Phase에 맞는 Effective Rule Set과 Scope를 결정하고 IaC를 평가하여 Rule별 결과, Finding, Report, Source별 Score/Coverage를 생성한다.
 
-최초 Slice의 Initial Assessment는 지정 Commit의 Terraform 표현을 평가한다. 정상적으로 평가한 위반은 `evaluation_status = FAIL`, 평가 실행 오류는 `execution_status = ERROR`로 분리한다.
+최초 Slice의 Initial Assessment는 지정 Commit의 Terraform 표현을 평가한다. 정상적으로 평가된 Governance 위반과 Parser/Tool/Agent 실행 오류는 서로 다른 상태 축으로 보존하며, 실행 오류를 Governance 위반으로 변환하지 않는다. 정확한 field 이름과 Enum spelling은 Shared Contract 구현 시 확정한다.
 
 ### Remediation과 Deployment
 
@@ -150,18 +151,18 @@ Backend와 Agent Runtime은 고객의 기존 VPC/Subnet에 연결하지 않는 �
 
 ```text
 Public Access Block이 없거나 불완전한 S3 Terraform
-  → GLOBAL-S3-PAB-001 Initial Assessment FAIL
+  → 승인된 S3 Public Access Block Rule로 Initial Assessment 위반 확인
   → Rule Finding / Report
   → aws_s3_bucket_public_access_block 최소 Terraform Remediation
-  → Customer Remediation PR / CI PASS
+  → Customer Remediation PR / CI 성공
   → Pre-Deploy Validation / Plan
   → Human Approval
   → GitHub Actions Apply
-  → Post-Deploy Assessment PASS
-  → AWS Actual Public Access Block verification MATCHED
+  → Post-Deploy IaC 준수 확인
+  → AWS Actual Public Access Block 관찰 일치 확인
 ```
 
-최종 PASS와 Actual verification은 새 Assessment/Deployment Artifact로 기록하고 과거 FAIL과 Finding을 덮어쓰지 않는다. Actual 불일치 또는 수집 오류는 Governance FAIL로 변환하지 않지만 Closed-loop 완료를 차단한다. 단순 Policy Q&A나 Mock 연결만으로는 MVP 성공으로 보지 않는다.
+최종 IaC 준수 결과와 Actual verification은 새 Assessment/Deployment Artifact로 기록하고 과거 위반과 Finding을 덮어쓰지 않는다. Actual 불일치 또는 수집 오류는 IaC Governance 판정을 바꾸지 않지만 Closed-loop 완료를 차단한다. 정확한 result/verification Enum spelling은 Shared Contract 구현 전까지 Open Decision이다. 단순 Policy Q&A나 Mock 연결만으로는 MVP 성공으로 보지 않는다.
 
 ## Open Decisions
 

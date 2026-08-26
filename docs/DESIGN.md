@@ -128,37 +128,39 @@ Policy Source
 
 ### Initial S3 IaC Assessment
 
-최초 Slice는 `GLOBAL-S3-PAB-001`을 `evaluation_type = IAC`로 평가한다. Initial Assessment는 지정 Repository Commit의 Terraform Snapshot에서 대상 `aws_s3_bucket`과 companion `aws_s3_bucket_public_access_block`을 정규화한다. Companion이 없거나 네 차단 속성 중 하나라도 명시적으로 `true`가 아니면 FAIL이다.
+최초 Slice는 Human Approval을 거친 S3 Public Access Block Rule candidate를 IaC 방식으로 평가하는 아키텍처를 검증한다. `GLOBAL-S3-PAB-001`과 `s3.public_access_block.enabled`는 현재 Proposed label이며, source revision/locator/content hash와 승인 대상 semantic hash가 binding된 Rule Approval 및 Shared Contract가 생기기 전에는 ACTIVE Rule이나 실행 정본이 아니다.
 
-Initial 판정은 AWS Actual 조회를 요구하지 않는다. Parser/Tool/Agent 오류는 Governance FAIL로 변환하지 않고 `execution_status = ERROR`로 기록한다.
+Initial Assessment는 지정 Repository Commit의 Terraform Snapshot에서 대상 `aws_s3_bucket`과 companion `aws_s3_bucket_public_access_block`을 정규화한다. 의도한 criterion은 companion과 네 차단 설정이 모두 활성화되는 것이지만 정확한 Rule version, severity, status와 result Enum은 Open Decision이다.
+
+Initial 판정은 AWS Actual 조회를 요구하지 않는다. Parser/Tool/Agent 오류는 Governance 위반으로 변환하지 않고 별도 실행 오류로 보존한다.
 
 ### Pre/Post-Deploy Assessment
 
-Pre-Deploy는 Remediation PR의 최신 IaC, AWS Actual State, `terraform plan`을 사용해 Drift와 Apply 가능성을 검증하고 새 `PRE_DEPLOY` Assessment/Result/Artifact를 Deployment에 연결한다. Post-Deploy는 승인된 Apply 이후 새 Assessment와 Result를 생성한다. `GLOBAL-S3-PAB-001`의 PASS/FAIL 정본은 배포된 Commit의 Terraform 표현을 IAC 방식으로 다시 판정한다.
+Pre-Deploy는 Remediation PR의 최신 IaC, AWS Actual State, `terraform plan`을 사용해 Drift와 Apply 가능성을 검증하고 새 Assessment/Result/Artifact를 Deployment에 연결한다. Post-Deploy는 승인된 Apply 이후 새 Assessment와 Result를 생성하고 같은 승인된 S3 Rule 기준으로 배포된 Commit의 Terraform 표현을 다시 평가한다.
 
-AWS S3 Public Access Block 실제값은 D 영역 Deployment가 소유하는 verification artifact로 저장한다. Closed-loop 완료에는 Post-Deploy `PASS/SUCCESS`와 `verification_status = MATCHED`가 모두 필요하다. Actual 값 불일치나 수집 오류는 IAC Result를 바꾸지 않지만 상위 Job을 실패시키고 완료를 차단한다.
+AWS S3 Public Access Block 실제값은 D 영역 Deployment가 소유하는 별도 verification artifact로 저장한다. Closed-loop 완료에는 Post-Deploy IaC의 준수 결과와 AWS Actual 관찰의 일치가 모두 필요하다. Actual 값 불일치나 수집 오류는 IaC Result를 바꾸지 않지만 완료를 차단한다. Exact verification field와 status vocabulary는 Shared Contract 구현 전까지 Open Decision이다.
 
-Post-Deploy PASS는 과거 Initial FAIL, Finding, Report를 수정하거나 삭제하지 않는다.
+Post-Deploy의 새 준수 결과는 과거 Initial 위반, Finding, Report를 수정하거나 삭제하지 않는다.
 
 ### Finding과 Report
 
-AssessmentResult는 Resource × Rule 정본이다. FAIL 결과는 Source별 Finding으로 연결한다. Report는 별도 Domain Object가 아니라 Assessment에 귀속된 Review/Final S3 Artifact다. 과거 결과는 덮어쓰지 않는다.
+AssessmentResult는 Resource × Rule 정본이다. 위반 결과는 Source별 Finding으로 연결한다. Report는 별도 Domain Object가 아니라 Assessment에 귀속된 Review/Final S3 Artifact다. 과거 결과는 덮어쓰지 않는다.
 
 ## Remediation과 배포 Closed-loop
 
-최초 Slice는 다음 순서로 완주한다.
+최초 Slice는 다음 architecture flow의 완주를 목표로 한다. Rule activation, exact status/field와 wire schema가 Shared Contract와 Fixture로 승인되기 전에는 실행 흐름으로 취급하지 않는다.
 
-1. User가 `GLOBAL-S3-PAB-001` Finding 하나를 선택한다.
-2. Remediation Agent가 companion resource가 없으면 추가하고, 있으면 `false`이거나 누락된 속성만 `true`로 변경하는 최소 Terraform Patch와 영향 분석을 만든다.
+1. User가 승인된 S3 Public Access Block Rule의 Finding 하나를 선택한다.
+2. Remediation Agent가 companion resource가 없으면 추가하고, 있으면 비활성 또는 누락된 설정만 활성화하는 최소 Terraform Patch와 영향 분석을 만든다.
 3. GitHub Tool이 고객 기준 branch에서 Remediation branch, Commit, PR을 만든다.
 4. 고객 Repository GitHub Actions가 `terraform fmt -check`, `terraform validate`, TFLint, Checkov를 실행한다.
 5. 최신 IaC와 AWS Actual로 Pre-Deploy Assessment를 수행한다.
 6. GitHub Actions가 OIDC로 TerraformPlanRole을 사용해 고객 기존 State/Backend 기준 `terraform plan`을 만든다.
-7. Deployment에 `planned_commit_sha`와 `plan_hash`를 저장한다.
-8. 사람은 Plan과 검증 결과를 보고 APPROVE/REJECT한다.
+7. Deployment에 평가 대상 Commit과 Plan hash를 저장한다.
+8. 사람은 Plan과 검증 결과를 보고 승인 또는 거절한다.
 9. Apply 직전 승인 Commit/Plan 동일성을 재검증한다.
 10. GitHub Actions가 OIDC로 TerraformDeploymentRole을 사용해 승인된 Plan을 Apply한다.
-11. 최신 IaC를 재평가해 새 Post-Deploy PASS Result와 Report를 만들고, AWS Actual Public Access Block 값을 verification evidence로 보존한다.
+11. 최신 IaC를 재평가해 새 Post-Deploy 결과와 Report를 만들고, AWS Actual Public Access Block 값을 별도 verification evidence로 보존한다.
 
 CI/Plan 실패 또는 Reject 시 Apply로 진행하지 않는다. 위 고객 Remediation PR은 Platform Repository의 개발 PR과 별개다. Platform 개발 PR은 Sub-issue 구현과 로컬 검증 후 `dev` 대상으로 만들고, Required CI와 사람 Review를 거쳐 Merge한다.
 

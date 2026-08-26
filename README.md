@@ -24,12 +24,12 @@ Policy / Rule / Profile
   → CI / Pre-Deploy Validation / terraform plan
   → Human Approval
   → GitHub Actions Apply
-  → Post-Deploy Assessment PASS
+  → Post-Deploy IaC 준수와 AWS Actual 일치 확인
 ```
 
 ### Initial Demo Slice
 
-최초 데모는 취약한 Terraform S3 Bucket 1개와 `GLOBAL-S3-PAB-001` Rule 1개로 제한합니다. Public Access Block 누락을 Initial Assessment에서 FAIL로 판정하고, 최소 Terraform Remediation PR과 사람의 승인·Apply를 거쳐 새 Post-Deploy Assessment에서 PASS를 확인합니다. AWS Actual Public Access Block 값은 배포 검증 증거로 함께 보존합니다.
+최초 데모는 취약한 Terraform S3 Bucket 1개와 S3 Public Access Block Rule candidate 1개로 제한합니다. Public Access Block 누락을 Initial Assessment에서 발견하고, 최소 Terraform Remediation PR과 사람의 승인·Apply를 거쳐 새 Post-Deploy Assessment와 AWS Actual verification으로 개선을 확인합니다. Rule ID, Control key, lifecycle status와 판정 Enum은 Shared Contract 구현과 Rule 근거 승인 전까지 Proposed 상태이며 ACTIVE 정본으로 사용하지 않습니다.
 
 ## Architecture 개요
 
@@ -38,7 +38,7 @@ React Frontend와 API Gateway/Lambda Backend가 Cognito 인증을 사용합니�
 ## Repository 구조
 
 - `apps/`: Frontend와 Backend 실행 영역
-- `packages/contracts/`: API/Domain/Structured Output Contract 코드의 정본
+- `packages/contracts/`: 향후 API/Domain/Structured Output Contract 코드의 실행 정본; 현재는 placeholder
 - `packages/governance/`: Rule, Control, Profile, Scoring 등 Governance Domain
 - `agent/`: LangGraph, Domain Agent, Runtime, Validator
 - `tools/`: Policy/Evidence/GitHub/AWS 외부 경계
@@ -52,7 +52,7 @@ React Frontend와 API Gateway/Lambda Backend가 Cognito 인증을 사용합니�
 
 ## 개발 시작점
 
-현재 단계는 Repository/문서/Python/Backend Package Bootstrap까지 완료됐습니다. 실행 가능한 제품 Application, 제품 Lambda Handler, Agent, Tool, AWS Resource는 아직 없습니다. `_bootstrap_probe`는 배포 대상이 아닌 Package 검증용입니다.
+현재 단계는 Repository/문서/Python/Backend Package Bootstrap까지 완료됐습니다. 실행 가능한 제품 Application, Shared Contract, 제품 Lambda Handler, Agent, Tool, AWS Resource는 아직 없습니다. `_bootstrap_probe`는 배포 대상이 아닌 Package 검증용입니다.
 
 1. [제품 요구사항](docs/PRD.md)과 [기술 설계](docs/DESIGN.md)를 읽습니다.
 2. [Contract](docs/CONTRACTS.md), [API](docs/API.md), [Naming](docs/NAMING.md)을 확인합니다.
@@ -80,9 +80,10 @@ python -m pip install --requirement requirements-dev.txt --requirement apps/back
 python -m ruff check .
 python -m ruff format --check .
 python -m unittest discover --start-directory tests/unit --pattern "test_*.py" --verbose
+python -m unittest discover --start-directory tests/contract --pattern "test_*.py" --verbose
 ```
 
-Python CI는 동일한 명령을 실행하며, 모든 Pull Request에는 별도 Secret Scan이 실행됩니다. 현재 Bootstrap은 제품 API Contract, Frontend Toolchain 또는 AWS Resource를 선택하지 않습니다.
+Python CI는 동일한 명령을 실행하며, 모든 Pull Request에는 별도 Secret Scan이 실행됩니다. 현재 Contract discovery는 실행 Contract가 없음을 확인하는 bootstrap guard 1건을 실행합니다. 실행 Contract가 추가되는 PR은 이 guard를 실제 Producer/Consumer Contract Test로 교체해야 합니다. 현재 Bootstrap은 제품 API Contract, Frontend Toolchain 또는 AWS Resource를 선택하지 않습니다.
 
 ## Backend Lambda Bootstrap
 
