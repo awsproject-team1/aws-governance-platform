@@ -9,6 +9,7 @@
 3. `rg`와 `rg --files`로 영향받는 코드·Fixture·Test를 좁혀 읽는다.
 4. 첫 정본과 관련 코드만으로 판단할 수 없을 때만 두 번째 문서를 읽는다.
 5. 같은 Codex 실행에서 이미 읽은 안정적인 문서는 실제로 변경됐거나 최신 재확인이 필요하지 않으면 다시 읽지 않는다. `git status`, `git diff`, 테스트 결과처럼 변하는 정보는 필요할 때 재확인한다.
+6. 이미 생성된 Sub-issue를 구현할 때는 해당 Sub-issue의 Scope, Acceptance Criteria, Test / Validation과 관련 정본만 확인한다. Parent Issue는 범위 판단에 정보가 부족하거나 Scope·의존 관계가 변경됐을 때, 또는 모든 Sub-issue 완료 후 Parent를 종료할 때만 다시 확인한다.
 
 Repository 전체 문서나 디렉터리를 기본 Context로 적재하지 않는다.
 
