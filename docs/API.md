@@ -1,6 +1,6 @@
 # API Interface
 
-이 문서는 Frontend ↔ Backend의 MVP HTTP Interface 정본이다. Domain 필드는 [CONTRACTS.md](CONTRACTS.md), 처리 구조는 [DESIGN.md](DESIGN.md)를 따른다.
+이 문서는 Frontend ↔ Backend의 MVP HTTP Interface 설명 정본이다. 실제 Schema 코드가 생기면 `packages/contracts/`가 실행 가능한 정본이며 이 문서와 같은 Pull Request에서 동기화한다. 명시적으로 Open Decision 또는 candidate example로 표시한 항목은 호환성 보장이 아니다. 특히 첫 S3 Slice의 Rule/Control label과 아직 정의하지 않은 Apply/Verification field·status는 Shared Contract·Fixture·Contract Test 및 Producer/Consumer 검토 전까지 Proposed 상태다. 인증 Context에서 승인자를 얻고 Commit/Plan 변경 시 재승인을 요구하는 Security invariant는 유지한다. Domain 필드는 [CONTRACTS.md](CONTRACTS.md), 처리 구조는 [DESIGN.md](DESIGN.md)를 따른다.
 
 ## 공통 원칙
 
@@ -37,7 +37,7 @@
 
 Purpose: 자연어 Policy Q&A와 요청 유형 Routing.
 
-Request의 확정 필드:
+Request candidate example:
 
 ```json
 {
@@ -157,7 +157,7 @@ Purpose: Resource × Rule 상세 판정 조회.
     {
       "assessment_result_id": "ar-001",
       "resource_id": "s3_bucket.logs",
-      "rule_id": "CUSTOMER-S3-ENC-001",
+      "rule_id": "<approved_rule_id>",
       "rule_version": 1,
       "evaluation_status": "FAIL",
       "execution_status": "SUCCESS"
@@ -166,7 +166,7 @@ Purpose: Resource × Rule 상세 판정 조회.
 }
 ```
 
-Pagination 적용 가능성은 열려 있으며 현재는 `items`만 확정한다.
+Pagination과 collection field 이름은 실행 Contract에서 함께 확정하며 현재 `items`는 response candidate example이다.
 
 ### `GET /assessments/{assessment_id}/findings`
 
@@ -179,10 +179,10 @@ Purpose: 사용자가 조치할 Rule-level Finding 조회.
       "finding_id": "fd-001",
       "assessment_result_id": "ar-001",
       "resource_id": "s3_bucket.logs",
-      "control_key": "s3.encryption.at_rest",
-      "rule_id": "CUSTOMER-S3-ENC-001",
+      "control_key": "<approved_control_key>",
+      "rule_id": "<approved_rule_id>",
       "rule_version": 1,
-      "source_type": "CUSTOMER",
+      "source_type": "GLOBAL",
       "status": "FAIL",
       "severity": "HIGH"
     }
@@ -282,10 +282,11 @@ Purpose: 사용자가 선택한 Finding 하나의 개선 Workflow 시작.
   "approved_commit_sha": null,
   "approved_plan_hash": null,
   "approved_by": null,
-  "approved_at": null,
-  "apply_status": null
+  "approved_at": null
 }
 ```
+
+Apply/Verification field 이름과 상태 어휘는 Shared Contract 구현 전까지 Open Decision이므로 이 response example에 고정하지 않는다. 구현 시 별도 Apply 결과와 AWS Actual verification artifact를 연결하되 IaC 판정과 혼합하지 않는다.
 
 ### `POST /deployments/{deployment_id}/approval`
 
