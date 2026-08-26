@@ -50,6 +50,14 @@ API Gateway + Lambda 중심의 서버리스 Backend를 사용한다. Backend의 
 
 Backend는 정책 의미, Resource × Rule 판정, Terraform 수정·배포 로직을 소유하지 않는다. 자연어 의미 분류는 Parent Graph Router가 담당하며 명시적 기능 API는 Router를 생략한다.
 
+### Backend Python Package와 Lambda 경계
+
+초기 Backend는 Python 3.14의 Framework-free 경계를 사용한다. `apps.backend`가 Backend package이고 제품 Lambda Handler는 `apps.backend.handlers` 아래에 위치한다. 실제 Handler는 해당 API의 event/response/error/auth Contract가 승인된 뒤 추가하며, Bootstrap 단계에서는 API Gateway payload, HTTP response 또는 Endpoint를 만들지 않는다.
+
+`apps.backend.handlers._bootstrap_probe`는 package staging과 호출 가능성만 확인하는 private non-deployable probe다. Infrastructure의 Lambda Handler로 연결하지 않으며 event/context 내용을 읽거나 기록하지 않는다.
+
+Backend Runtime의 직접 Dependency는 `apps/backend/requirements.txt`에 정확한 Version으로 고정하고 개발 Tool은 root `requirements-dev.txt`에 둔다. Lambda ZIP stage root에는 `apps/backend`와 승인된 first-party import closure만 같은 package 경로로 배치하고 third-party dependency는 stage root에 설치한다. 전체 Monorepo, Test, 문서, Frontend를 Artifact에 복사하지 않는다. Lambda Layer, Python build backend, 실제 ZIP 생성 자동화는 첫 제품 Handler와 배포 경계가 확정될 때 재검토한다.
+
 ## Cognito
 
 Admin과 User는 동일 Cognito User Pool과 로그인 화면을 사용한다. Backend는 JWT Group/Role을 검증한다. 사용자 초대와 MFA를 포함한 구체 운영 설정은 구현 전에 확정해야 한다.

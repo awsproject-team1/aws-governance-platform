@@ -9,6 +9,7 @@ on:
       - "**/*.py"
       - "pyproject.toml"
       - "requirements-dev.txt"
+      - "apps/backend/requirements.txt"
       - ".github/workflows/python-checks.yml"
   workflow_dispatch:
 
@@ -27,10 +28,15 @@ jobs:
         with:
           python-version: "3.14"
           cache: pip
-          cache-dependency-path: requirements-dev.txt
+          cache-dependency-path: |
+            requirements-dev.txt
+            apps/backend/requirements.txt
 
-      - name: Install development dependencies
-        run: python -m pip install --requirement requirements-dev.txt
+      - name: Install development and Backend runtime dependencies
+        run: >-
+          python -m pip install
+          --requirement requirements-dev.txt
+          --requirement apps/backend/requirements.txt
 
       - name: Run Ruff lint
         run: python -m ruff check .
