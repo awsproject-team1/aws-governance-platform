@@ -127,6 +127,8 @@ Purpose: Repository와 Scope를 구조화해 Initial Assessment 시작.
 
 `assessment_id`는 실제 단계 진입 시 생성되어 Job 조회에서 노출된다.
 
+실행 가능한 202 응답 정본은 `packages.contracts.AssessmentAcceptedResponse`다. 이 타입은 `job_id`와 고정된 `QUEUED` 상태만 소유한다. Request의 Scope/Profile Schema와 실제 Handler는 Open Decision이므로 아직 실행 가능한 Contract에 포함하지 않는다.
+
 ### `GET /assessments/{assessment_id}`
 
 Purpose: 평가 실행 메타데이터 조회.
@@ -325,6 +327,8 @@ Purpose: Polling용 Workflow 진행 상태와 연결된 Domain ID 조회.
 
 Finding, Report, Patch, Plan 본문은 이 API가 반환하지 않는다.
 
+실행 가능한 응답 정본은 `packages.contracts.JobResponse`이며 상태와 단계는 각각 `JobStatus`, `JobCurrentStep`으로 제한한다. `job_type`과 연결 ID는 opaque non-empty string이고 연결 전 ID는 `null`이다. Job 내부 `error`는 공개 `ApiError` detail 또는 `null`이며 `ApiErrorResponse`의 최상위 envelope를 중첩하지 않는다. 닫힌 `job_type` 집합과 `QUEUED`의 기본 `current_step`은 Open Decision이다.
+
 ## Error
 
 Backend API의 최소 오류 응답은 다음 형식이다.
@@ -337,6 +341,8 @@ Backend API의 최소 오류 응답은 다음 형식이다.
   }
 }
 ```
+
+실행 가능한 정본은 `packages.contracts.ApiError`와 최상위 `ApiErrorResponse`다. `code`와 `message`는 non-empty string이지만 endpoint별 `code`의 닫힌 Enum은 아직 확정하지 않는다. Job 응답의 `error` 필드는 `ApiError` detail만 사용한다.
 
 | HTTP | Category |
 |---|---|

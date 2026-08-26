@@ -52,7 +52,7 @@ React Frontend와 API Gateway/Lambda Backend가 Cognito 인증을 사용합니�
 
 ## 개발 시작점
 
-현재 단계는 Repository/문서/Python/Backend Package Bootstrap까지 완료됐습니다. 실행 가능한 제품 Application, Shared Contract, 제품 Lambda Handler, Agent, Tool, AWS Resource는 아직 없습니다. `_bootstrap_probe`는 배포 대상이 아닌 Package 검증용입니다.
+현재 단계는 Repository/문서/Python/Backend Package Bootstrap과 최소 MVP Transport Contract까지 구현됐습니다. 실행 가능한 제품 Application, 전체 Domain Contract, 제품 Lambda Handler, 인증, Agent, Tool, AWS Resource는 아직 없습니다. `_bootstrap_probe`는 배포 대상이 아닌 Package 검증용입니다.
 
 1. [제품 요구사항](docs/PRD.md)과 [기술 설계](docs/DESIGN.md)를 읽습니다.
 2. [Contract](docs/CONTRACTS.md), [API](docs/API.md), [Naming](docs/NAMING.md)을 확인합니다.
@@ -83,7 +83,7 @@ python -m unittest discover --start-directory tests/unit --pattern "test_*.py" -
 python -m unittest discover --start-directory tests/contract --pattern "test_*.py" --verbose
 ```
 
-Python CI는 동일한 명령을 실행하며, 모든 Pull Request에는 별도 Secret Scan이 실행됩니다. 현재 Contract discovery는 실행 Contract가 없음을 확인하는 bootstrap guard 1건을 실행합니다. 실행 Contract가 추가되는 PR은 이 guard를 실제 Producer/Consumer Contract Test로 교체해야 합니다. 현재 Bootstrap은 제품 API Contract, Frontend Toolchain 또는 AWS Resource를 선택하지 않습니다.
+Python CI는 동일한 명령을 실행하며, 모든 Pull Request에는 별도 Secret Scan이 실행됩니다. Contract discovery는 Job polling, Assessment acceptance/phase, public error envelope의 실행 가능한 최소 Transport Contract를 검증합니다. 제품 Lambda Handler, 인증, API Gateway Event/Response Adapter, persistence 또는 AWS Resource는 선택하지 않습니다.
 
 ## Backend Lambda Bootstrap
 

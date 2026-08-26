@@ -44,7 +44,7 @@ APPLY
 POST_DEPLOY_VERIFICATION
 ```
 
-구체 Enum은 첫 Schema 구현 시 단일 Contract로 고정한다.
+실행 가능한 정본은 `packages.contracts.JobStatus`, `JobCurrentStep`, `JobResponse`다. `job_type`과 ID는 별도 Prefix나 닫힌 Enum을 강제하지 않는 opaque non-empty string이다. `JobResponse.error`는 `ApiError` detail 또는 `null`이며 내부 Tool 오류 세부정보를 포함하지 않는다. `job_type`의 닫힌 집합, `QUEUED`의 기본 `current_step`, Job Schema version은 Open Decision으로 유지한다.
 
 ## Control
 
@@ -111,6 +111,8 @@ Rule ID 형식은 [NAMING.md](NAMING.md)를 따른다. 하나의 Rule이 여러 
 - Phase: `INITIAL`, `PRE_DEPLOY`, `POST_DEPLOY`
 - Validation: 각 실행에 새 ID를 만들고 과거 기록을 덮어쓰지 않는다. Rule Pin Set, Runtime Settings, Phase를 보존한다.
 - Versioning: Assessment 자체보다 연결된 Profile/Rule/Settings/Scoring Version을 pin한다. Schema version은 Open Decision이다.
+
+현재 실행 가능한 Assessment 정본은 `AssessmentPhase`와 `AssessmentAcceptedResponse`로 제한한다. `AssessmentAcceptedResponse`는 Initial Assessment 요청 수락 시 `job_id`와 고정된 `QUEUED` 상태만 전달한다. Assessment lifecycle status, 전체 Assessment record/projection과 create request의 Scope/Profile Schema는 확정 전까지 문서 Contract로만 유지한다.
 
 ## AssessmentResult / RuleEvaluation
 
@@ -189,6 +191,8 @@ Backend 외부 API 최소 Contract:
   }
 }
 ```
+
+실행 가능한 정본은 `packages.contracts.ApiError`와 `ApiErrorResponse`다. `ApiErrorResponse`는 위 최상위 envelope를 만들고, `JobResponse.error`는 내부에 `ApiError` detail만 포함한다. `code`와 `message`는 non-empty string으로 검증하지만 endpoint별 `code`의 닫힌 Enum은 Open Decision이다.
 
 Agent/Tool/Code 내부 오류에는 안정적인 code, 사용자용 message, retry 가능 여부, source, 선택 details가 필요하다. 내부 필드명 `error_code`와 외부 API `code`는 경계별 Contract로 구분한다. 예외 원문과 Secret을 외부 또는 로그에 노출하지 않는다.
 
