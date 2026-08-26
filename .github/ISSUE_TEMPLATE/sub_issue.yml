@@ -3,11 +3,16 @@ description: 실제 구현 가능한 기능 작업을 정의합니다.
 title: "[Feature] "
 labels: []
 body:
+  - type: markdown
+    attributes:
+      value: "이 템플릿의 Parent 참조는 설명용입니다. Issue 생성 후 Parent의 Add sub-issue 기능으로 GitHub Native Sub-issue 관계를 반드시 연결합니다."
   - type: input
     id: parent
     attributes:
-      label: Parent Issue
+      label: Parent Issue reference
       placeholder: "#123"
+    validations:
+      required: true
   - type: textarea
     id: background
     attributes:
@@ -63,6 +68,9 @@ body:
     id: validation
     attributes:
       label: Test / Validation
-      description: 실행할 명령 또는 확인 절차를 작성합니다.
+      description: PR 전 로컬 검증과 PR 후 Required CI를 구분해 작성합니다.
     validations:
       required: true
+  - type: markdown
+    attributes:
+      value: "구현과 로컬 검증 후 dev 대상 PR을 생성합니다. 사람의 Review/Merge 후 dev 반영을 확인하고 Issue를 수동으로 닫은 다음 후속 Sub-issue를 시작합니다."

@@ -124,7 +124,13 @@ governance-dev-audit
 <SOURCE>-<RESOURCE_GROUP>-<CONTROL>-<NNN>
 ```
 
-예:
+최초 Global Rule:
+
+```text
+GLOBAL-S3-PAB-001
+```
+
+추가 예:
 
 ```text
 CUSTOMER-S3-ENC-001
@@ -136,7 +142,13 @@ CUSTOMER-IAM-MFA-001
 
 ## Control Key
 
-현재 설계는 다음과 같은 점 구분 key를 사용한다.
+최초 실제 Control Key:
+
+```text
+s3.public_access_block.enabled
+```
+
+추가 설계 예시는 다음과 같다.
 
 ```text
 s3.encryption.at_rest
@@ -144,7 +156,7 @@ sg.ingress.least_privilege
 cloudtrail.trail.enabled
 ```
 
-Control Key는 Control Registry가 소유한다. 위 예시를 넘어서는 전체 조합 규칙, 약어 목록, rename/version 정책은 아직 확정되지 않았다.
+Control Key는 Control Registry가 소유한다. 위 값을 넘어서는 전체 조합 규칙, 약어 목록, rename/version 정책은 아직 확정되지 않았다.
 
 ## Domain ID와 API Field
 

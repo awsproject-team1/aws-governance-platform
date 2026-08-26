@@ -26,10 +26,17 @@ dev → Pull Request → Required CI / Review → Squash Merge → main
 ## Issue와 작업 단위
 
 - 개발 시작 시 A/B/C/D Parent Issue를 만들고 Owner와 Scope를 고정합니다.
-- 실제 구현은 Parent 아래 Sub-issue 또는 Bug 단위로 진행합니다.
-- Parent 전용 branch는 만들지 않습니다.
+- 실제 구현은 Parent 아래 GitHub Native Sub-issue 또는 Bug 단위로 진행합니다.
+- Parent 본문의 중복 체크리스트가 아니라 Native Sub-issue progress를 진행률 정본으로 사용합니다.
+- Sub-issue 생성 시 Parent의 **Add sub-issue** 기능을 사용하거나 생성 직후 Native 관계를 연결합니다. 본문의 `Parent Issue: #123` 텍스트만으로는 Native 관계가 생기지 않습니다.
+- Parent 전용 branch나 PR은 만들지 않습니다.
 - Sub-issue는 Review와 Merge가 가능한 크기로 유지하되 억지로 지나치게 작게 나누지 않습니다.
 - 다른 Owner 영역이나 공통 Contract에 영향을 주면 구현 전에 관련 Owner와 합의합니다.
+- Sub-issue 구현과 로컬 검증을 마친 뒤 Platform Repository PR을 `dev` 대상으로 생성합니다. Required CI는 PR 이후 Gate로 수행합니다.
+- PR은 Sub-issue를 `Refs`하고 자동 종료용 `Closes`를 사용하지 않습니다.
+- Review와 Merge는 사람이 수행합니다. `dev` Merge를 확인한 뒤 사람이 Sub-issue를 닫고 다음 Sub-issue를 시작합니다.
+- Parent 통합 검증도 마지막 Native Sub-issue로 생성해 같은 구현·검증·Review·Merge·수동 종료 절차를 적용합니다.
+- 통합 검증 Sub-issue를 포함한 모든 Native Sub-issue가 종료되어 progress가 100%가 되면 Parent Issue를 닫습니다.
 
 ## Branch Naming
 

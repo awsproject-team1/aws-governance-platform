@@ -118,13 +118,19 @@ Policy Source
 
 ## Assessment
 
-### IaC Assessment
+### Initial S3 IaC Assessment
 
-Initial Assessment는 실제 Repository Commit의 IaC Snapshot을 기준으로 하고 AWS Actual 조회를 필수로 하지 않는다. Phase가 `INITIAL`이면 IAC Rule을 중심으로 Effective Rule Set을 만든다.
+최초 Slice는 `GLOBAL-S3-PAB-001`을 `evaluation_type = IAC`로 평가한다. Initial Assessment는 지정 Repository Commit의 Terraform Snapshot에서 대상 `aws_s3_bucket`과 companion `aws_s3_bucket_public_access_block`을 정규화한다. Companion이 없거나 네 차단 속성 중 하나라도 명시적으로 `true`가 아니면 FAIL이다.
 
-### AWS Actual State Assessment
+Initial 판정은 AWS Actual 조회를 요구하지 않는다. Parser/Tool/Agent 오류는 Governance FAIL로 변환하지 않고 `execution_status = ERROR`로 기록한다.
 
-Pre/Post-Deploy에서는 최신 AWS Actual State를 Read-Only로 조회한다. Pre-Deploy는 최신 PR IaC와 AWS 상태의 Drift/Conflict/Policy를 검증하며, Post-Deploy는 Apply 이후 동일 Governance 기준으로 전체 대상 범위를 재평가한다.
+### Pre/Post-Deploy Assessment
+
+Pre-Deploy는 Remediation PR의 최신 IaC, AWS Actual State, `terraform plan`을 사용해 Drift와 Apply 가능성을 검증하고 새 `PRE_DEPLOY` Assessment/Result/Artifact를 Deployment에 연결한다. Post-Deploy는 승인된 Apply 이후 새 Assessment와 Result를 생성한다. `GLOBAL-S3-PAB-001`의 PASS/FAIL 정본은 배포된 Commit의 Terraform 표현을 IAC 방식으로 다시 판정한다.
+
+AWS S3 Public Access Block 실제값은 D 영역 Deployment가 소유하는 verification artifact로 저장한다. Closed-loop 완료에는 Post-Deploy `PASS/SUCCESS`와 `verification_status = MATCHED`가 모두 필요하다. Actual 값 불일치나 수집 오류는 IAC Result를 바꾸지 않지만 상위 Job을 실패시키고 완료를 차단한다.
+
+Post-Deploy PASS는 과거 Initial FAIL, Finding, Report를 수정하거나 삭제하지 않는다.
 
 ### Finding과 Report
 
@@ -132,8 +138,10 @@ AssessmentResult는 Resource × Rule 정본이다. FAIL 결과는 Source별 Find
 
 ## Remediation과 배포 Closed-loop
 
-1. User가 Finding 하나를 선택한다.
-2. Remediation Agent가 최소 Terraform Patch/Diff와 영향 분석을 만든다.
+최초 Slice는 다음 순서로 완주한다.
+
+1. User가 `GLOBAL-S3-PAB-001` Finding 하나를 선택한다.
+2. Remediation Agent가 companion resource가 없으면 추가하고, 있으면 `false`이거나 누락된 속성만 `true`로 변경하는 최소 Terraform Patch와 영향 분석을 만든다.
 3. GitHub Tool이 고객 기준 branch에서 Remediation branch, Commit, PR을 만든다.
 4. 고객 Repository GitHub Actions가 `terraform fmt -check`, `terraform validate`, TFLint, Checkov를 실행한다.
 5. 최신 IaC와 AWS Actual로 Pre-Deploy Assessment를 수행한다.
@@ -142,9 +150,9 @@ AssessmentResult는 Resource × Rule 정본이다. FAIL 결과는 Source별 Find
 8. 사람은 Plan과 검증 결과를 보고 APPROVE/REJECT한다.
 9. Apply 직전 승인 Commit/Plan 동일성을 재검증한다.
 10. GitHub Actions가 OIDC로 TerraformDeploymentRole을 사용해 승인된 Plan을 Apply한다.
-11. 최신 AWS Actual을 조회해 Post-Deploy Assessment와 새로운 Report를 만든다.
+11. 최신 IaC를 재평가해 새 Post-Deploy PASS Result와 Report를 만들고, AWS Actual Public Access Block 값을 verification evidence로 보존한다.
 
-CI/Plan 실패 또는 Reject 시 Apply로 진행하지 않는다.
+CI/Plan 실패 또는 Reject 시 Apply로 진행하지 않는다. 위 고객 Remediation PR은 Platform Repository의 개발 PR과 별개다. Platform 개발 PR은 Sub-issue 구현과 로컬 검증 후 `dev` 대상으로 만들고, Required CI와 사람 Review를 거쳐 Merge한다.
 
 ## IAM과 Security Boundary
 
@@ -199,7 +207,7 @@ Request → Job(DynamoDB) → Workflow
 
 - Backend/Agent 장시간 실행의 구체 Runtime 전환 조건
 - 모델 라우팅과 Skill 구현 방식
-- 최종 지원 Resource와 Rule Set
+- 최초 S3 Slice 이후 확장할 Resource와 Rule Set
 - AWS Resource Naming/Tagging 최종안
 - Terraform State Backend/Locking의 팀 개발환경 운영 규칙
 - OIDC Subject/Environment 조건

@@ -64,7 +64,18 @@ Frontend에서 메뉴를 숨기는 것만으로 권한을 통제하지 않으며
 - Post-Deploy Assessment와 Before/After 검증
 - Cognito Admin/User RBAC, Read-Only Agent, Structured Output Validation, Audit/Observability
 
-MVP Resource 후보는 S3, Security Group, IAM Role/Policy, 일부 VPC Resource, CloudTrail이다. 최종 지원 Resource와 대표 Rule 수는 아직 확정하지 않는다.
+### Initial Vertical Slice
+
+최초 구현과 최종 데모는 지원 폭보다 Closed-loop 완주를 우선해 다음 범위로 고정한다.
+
+- Governed Resource type: `aws_s3_bucket` 1종
+- Demo fixture: 취약한 S3 Bucket instance 1개
+- Global Rule: `GLOBAL-S3-PAB-001` version 1
+- Control: `s3.public_access_block.enabled`
+- Requirement: 연결된 `aws_s3_bucket_public_access_block`의 네 차단 속성이 모두 `true`
+- Remediation: companion resource 추가 또는 필요한 속성만 변경하는 최소 Terraform Patch
+
+`aws_s3_bucket_public_access_block`은 별도 평가 대상 Resource가 아니라 S3 Bucket Rule의 companion Terraform construct이자 Remediation target이다. Security Group, IAM, VPC, CloudTrail과 추가 Rule은 첫 Closed-loop가 통합 검증된 후 확장한다.
 
 ## 주요 User Flow
 
@@ -76,9 +87,11 @@ MVP Resource 후보는 S3, Security Group, IAM Role/Policy, 일부 VPC Resource,
 
 Admin이 관리한 Policy Profile과 고객 Repository를 User가 선택한다. 시스템은 Phase에 맞는 Effective Rule Set과 Scope를 결정하고 IaC를 평가하여 Rule별 결과, Finding, Report, Source별 Score/Coverage를 생성한다.
 
+최초 Slice의 Initial Assessment는 지정 Commit의 Terraform 표현을 평가한다. 정상적으로 평가한 위반은 `evaluation_status = FAIL`, 평가 실행 오류는 `execution_status = ERROR`로 분리한다.
+
 ### Remediation과 Deployment
 
-User가 Finding 하나를 선택하면 시스템이 최소 Patch/Diff와 영향 설명을 생성하고 고객 Repository에 PR을 만든다. CI와 Pre-Deploy 검증 및 Plan이 성공한 뒤 Human Approval을 받고, GitHub Actions가 Apply한다. 이후 최신 AWS 상태를 다시 평가한다.
+User가 Finding 하나를 선택하면 시스템이 최소 Patch/Diff와 영향 설명을 생성하고 고객 Repository에 PR을 만든다. CI와 Pre-Deploy 검증 및 Plan이 성공한 뒤 Human Approval을 받고, GitHub Actions가 Apply한다. 이후 최신 IaC와 AWS 상태를 다시 확인하고 새 Post-Deploy Assessment를 생성한다.
 
 ## Functional Requirements
 
@@ -133,28 +146,29 @@ Backend와 Agent Runtime은 고객의 기존 VPC/Subnet에 연결하지 않는 �
 
 ## Success Criteria
 
-소수의 확정된 Resource/Rule 범위에서 다음 E2E 흐름이 실제로 동작해야 한다.
+최초 S3 Slice에서 다음 E2E 흐름이 실제로 동작해야 한다.
 
 ```text
-취약한 고객 IaC
-  → Initial Assessment FAIL
+Public Access Block이 없거나 불완전한 S3 Terraform
+  → GLOBAL-S3-PAB-001 Initial Assessment FAIL
   → Rule Finding / Report
-  → 최소 Terraform Remediation
-  → PR / CI PASS
+  → aws_s3_bucket_public_access_block 최소 Terraform Remediation
+  → Customer Remediation PR / CI PASS
   → Pre-Deploy Validation / Plan
   → Human Approval
   → GitHub Actions Apply
   → Post-Deploy Assessment PASS
+  → AWS Actual Public Access Block verification MATCHED
 ```
 
-단순 Policy Q&A나 Mock 연결만으로는 MVP 성공으로 보지 않는다. 지원 폭보다 Closed-loop 완결성과 감사 가능성을 우선한다.
+최종 PASS와 Actual verification은 새 Assessment/Deployment Artifact로 기록하고 과거 FAIL과 Finding을 덮어쓰지 않는다. Actual 불일치 또는 수집 오류는 Governance FAIL로 변환하지 않지만 Closed-loop 완료를 차단한다. 단순 Policy Q&A나 Mock 연결만으로는 MVP 성공으로 보지 않는다.
 
 ## Open Decisions
 
-- 최종 Demo의 지원 Resource와 Resource별 Rule Set
+- 최초 S3 Slice 이후 확장할 Resource와 Rule 우선순위
 - Agent Model Routing 기준
 - Policy/Assessment/Remediation Skill 구현 방식
-- 결정론적 Check Registry로 분리할 Rule 범위
+- 결정론적 Check Registry로 분리할 추가 Rule 범위
 - 구체 SLO와 데이터 보존기간
 
 ## 근거 문서

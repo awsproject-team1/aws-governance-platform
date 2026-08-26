@@ -157,7 +157,7 @@ Purpose: Resource × Rule 상세 판정 조회.
     {
       "assessment_result_id": "ar-001",
       "resource_id": "s3_bucket.logs",
-      "rule_id": "CUSTOMER-S3-ENC-001",
+      "rule_id": "GLOBAL-S3-PAB-001",
       "rule_version": 1,
       "evaluation_status": "FAIL",
       "execution_status": "SUCCESS"
@@ -179,10 +179,10 @@ Purpose: 사용자가 조치할 Rule-level Finding 조회.
       "finding_id": "fd-001",
       "assessment_result_id": "ar-001",
       "resource_id": "s3_bucket.logs",
-      "control_key": "s3.encryption.at_rest",
-      "rule_id": "CUSTOMER-S3-ENC-001",
+      "control_key": "s3.public_access_block.enabled",
+      "rule_id": "GLOBAL-S3-PAB-001",
       "rule_version": 1,
-      "source_type": "CUSTOMER",
+      "source_type": "GLOBAL",
       "status": "FAIL",
       "severity": "HIGH"
     }
@@ -283,7 +283,9 @@ Purpose: 사용자가 선택한 Finding 하나의 개선 Workflow 시작.
   "approved_plan_hash": null,
   "approved_by": null,
   "approved_at": null,
-  "apply_status": null
+  "apply_status": "NOT_STARTED",
+  "verification_status": "PENDING",
+  "verification_artifact_available": false
 }
 ```
 

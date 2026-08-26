@@ -242,6 +242,75 @@ Job
       └─ POST_DEPLOY Assessment(deployment_id)
 ```
 
+## Initial S3 Closed-loop Contract
+
+최초 구현 Slice는 다음 Rule을 승인된 정본으로 사용한다.
+
+- `rule_id`: `GLOBAL-S3-PAB-001`
+- `version`: `1`
+- `status`: `ACTIVE`
+- `source_type`: `GLOBAL`
+- `source_references[]`: source ID `AWS-S3-BLOCK-PUBLIC-ACCESS`, URL `https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html`, retrieval date, immutable `snapshot_ref`, `snapshot_sha256`
+- `resource_type`: `aws_s3_bucket`
+- `control_key`: `s3.public_access_block.enabled`
+- `evaluation_type`: `IAC`
+- `severity`: `HIGH`
+- `requirement`: 연결된 `aws_s3_bucket_public_access_block`이 존재하고 `block_public_acls`, `ignore_public_acls`, `block_public_policy`, `restrict_public_buckets`가 모두 명시적으로 `true`
+- `remediation_type`: `TERRAFORM_PATCH`
+
+`ACTIVE` 등록은 정확한 URL, 조회 시각, 변경 불가능한 Source Snapshot reference와 SHA-256이 모두 저장된 경우에만 유효하다. Companion이 없거나 네 값 중 하나라도 누락 또는 `false`이면 정상 실행된 판정은 `evaluation_status = FAIL`, `execution_status = SUCCESS`다. Parser/Tool/Agent 오류는 `evaluation_status = null`, `execution_status = ERROR`이며 Finding을 만들지 않는다. Remediation은 companion 추가 또는 필요한 속성만 변경하는 최소 Patch다.
+
+Initial과 Post-Deploy Rule 판정은 각각 평가 대상 Commit의 Terraform 표현을 사용한다. Apply 이후 AWS Actual Public Access Block 값은 IAC Rule의 판정 축과 혼합하지 않는다.
+
+AWS Actual verification evidence는 Deployment가 소유한다.
+
+- Producer: Read-Only AWS Resource Tool; orchestration/record owner는 D 영역 Deployment Workflow
+- Required observation semantic: AWS account reference, Region, S3 resource ID/ARN, `observed_at`, 네 Public Access Block Boolean, `execution_status`, 선택적 `error_code`
+- Deployment fields: `verification_status`, `verification_artifact_ref`
+- Verification status: `PENDING`, `MATCHED`, `MISMATCHED`, `ERROR`
+- Consumer: Post-Deploy Assessment, A 영역 API/UI, Audit
+
+Closed-loop 성공은 새 Post-Deploy IAC Result가 `PASS/SUCCESS`이고 `verification_status = MATCHED`일 때만 성립한다. `MISMATCHED` 또는 `ERROR`는 IAC Governance Result를 FAIL로 바꾸지 않지만 상위 Job을 `FAILED`로 종료하고 데모 완료를 차단한다. Apply가 성공했더라도 두 결과를 모두 보존한다.
+
+첫 Slice의 ID 관계는 다음과 같다.
+
+```text
+Assessment Job(job_id)
+  → Initial Assessment(assessment_id, job_id, phase=INITIAL)
+    → AssessmentResult(assessment_result_id, FAIL/SUCCESS)
+      → Finding(finding_id, status=FAIL)
+
+Remediation Job(job_id)
+  → Remediation(remediation_id, job_id, finding_id)
+    → Deployment(deployment_id, job_id, remediation_id)
+      ├─ Pre Assessment(new assessment_id, job_id, phase=PRE_DEPLOY, deployment_id)
+      │  └─ AssessmentResult / validation artifacts
+      ├─ Apply result artifact
+      ├─ AWS Actual verification artifact
+      └─ Post Assessment(new assessment_id, job_id, phase=POST_DEPLOY, deployment_id)
+         └─ AssessmentResult(new assessment_result_id, PASS/SUCCESS)
+```
+
+각 Pre/Post-Deploy 실행은 새 ID와 Artifact를 만들고 Initial 기록을 덮어쓰지 않는다. Report는 Assessment-owned Artifact이므로 별도 `report_id`를 만들지 않는다.
+
+첫 Slice에서 사용하는 상태 집합은 다음과 같다. 더 넓은 Lifecycle은 해당 구현 전에 별도 Contract 변경으로 확장한다.
+
+- Assessment status: `RUNNING`, `WAITING_REVIEW`, `COMPLETED`, `FAILED`
+- Deployment status: `PREPARING`, `WAITING_APPROVAL`, `APPLYING`, `COMPLETED`, `FAILED`, `REJECTED`
+- Approval status: `PENDING`, `APPROVED`, `REJECTED`, `INVALIDATED`
+- Apply status: `NOT_STARTED`, `RUNNING`, `SUCCEEDED`, `FAILED`
+- Verification status: `PENDING`, `MATCHED`, `MISMATCHED`, `ERROR`
+
+`APPROVE`/`REJECT`는 사용자 command decision이고 `APPROVED`/`REJECTED`는 저장 상태다. Commit 또는 Plan이 바뀌면 기존 승인은 `INVALIDATED`가 되고 재Plan·재승인이 필요하다. API는 실행 전 Apply를 `null`이 아닌 `NOT_STARTED`로 표현한다.
+
+Producer/Consumer 책임은 기존 Domain 경계를 유지한다.
+
+- A: Job/API/Auth/Data와 Contract 저장·조회
+- B: Global Control/Rule Registry와 근거
+- C: Assessment, Result Schema Validation, deterministic Finding 생성
+- D: Remediation, 고객 PR/CI/Plan/Approval/Apply, Actual verification, Post-Deploy 연결
+- Shared Contract: ID, Enum, Schema 호환성과 Fixture
+
 ## Contract 변경 절차
 
 1. Producer, Consumer, 영향 Owner를 식별한다.

@@ -24,8 +24,12 @@ Policy / Rule / Profile
   → CI / Pre-Deploy Validation / terraform plan
   → Human Approval
   → GitHub Actions Apply
-  → Post-Deploy Verification
+  → Post-Deploy Assessment PASS
 ```
+
+### Initial Demo Slice
+
+최초 데모는 취약한 Terraform S3 Bucket 1개와 `GLOBAL-S3-PAB-001` Rule 1개로 제한합니다. Public Access Block 누락을 Initial Assessment에서 FAIL로 판정하고, 최소 Terraform Remediation PR과 사람의 승인·Apply를 거쳐 새 Post-Deploy Assessment에서 PASS를 확인합니다. AWS Actual Public Access Block 값은 배포 검증 증거로 함께 보존합니다.
 
 ## Architecture 개요
 
