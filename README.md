@@ -55,7 +55,30 @@ React Frontend와 API Gateway/Lambda Backend가 Cognito 인증을 사용합니�
 3. 사람 개발자는 [CONTRIBUTING.md](CONTRIBUTING.md), Coding Agent는 [AGENTS.md](AGENTS.md)를 따릅니다.
 4. GitHub Issue를 만들고 `dev`에서 short-lived feature branch를 생성해 작업합니다.
 
-빌드·테스트 명령과 환경변수는 기술 Bootstrap이 확정될 때 각 정본 문서와 `.env.example`에 추가합니다.
+Python 개발 명령은 아래 기술 Bootstrap으로 확정했습니다. 제품 Runtime 환경변수와 Application별 빌드 명령은 해당 구현이 결정될 때 각 정본 문서와 `.env.example`에 추가합니다.
+
+## Python 개발 환경
+
+초기 Python 도구 체계는 Python 3.14, 표준 `pip`, `unittest`, Ruff를 사용합니다. 결정 배경과 제외 범위는 [ADR 0001](docs/decisions/0001-python-bootstrap.md)을 확인합니다.
+
+PowerShell에서 Python 3.14를 명시해 로컬 환경을 준비합니다.
+
+```powershell
+py -3.14 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python --version
+python -m pip install --requirement requirements-dev.txt
+```
+
+변경사항을 검증합니다.
+
+```powershell
+python -m ruff check .
+python -m ruff format --check .
+python -m unittest discover --start-directory tests/unit --pattern "test_*.py" --verbose
+```
+
+Python CI는 동일한 명령을 실행하며, 모든 Pull Request에는 별도 Secret Scan이 실행됩니다. 현재 Bootstrap은 Backend Framework, Domain Contract, Frontend Toolchain 또는 AWS Resource를 선택하지 않습니다.
 
 ## 주요 문서
 
