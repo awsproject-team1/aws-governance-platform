@@ -242,6 +242,50 @@ Job
       └─ POST_DEPLOY Assessment(deployment_id)
 ```
 
+## Initial S3 Closed-loop Candidate
+
+ADR 0002가 승인한 범위는 S3 Public Access Block을 첫 vertical slice로 사용하는 아키텍처와 안전 경계다. 아래 값과 흐름은 구현 계획을 위한 Candidate이며 아직 `packages/contracts/`, Registry, Fixture 또는 Contract Test가 뒷받침하는 실행 Contract가 아니다.
+
+- Governed resource semantic: Terraform `aws_s3_bucket`과 companion `aws_s3_bucket_public_access_block`
+- Proposed Rule ID example: `GLOBAL-S3-PAB-001`
+- Proposed Control key example: `s3.public_access_block.enabled`
+- Intended requirement: companion의 네 Public Access Block 설정이 모두 명시적으로 활성화됨
+- Intended evaluation boundary: Initial/Post-Deploy의 IaC 표현과 AWS Actual verification을 별도 축으로 유지
+- Intended remediation boundary: companion 추가 또는 필요한 설정만 변경하는 최소 Terraform Patch
+
+위 Rule ID, Control key, version, severity, lifecycle status, evaluation/result Enum과 wire field 이름은 Shared Contract 구현 및 Producer/Consumer 검토 전까지 Proposed 상태다. 이 Candidate를 `ACTIVE` Rule로 등록하거나 평가 정본으로 사용해서는 안 된다.
+
+Candidate source discovery URL은 `https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-control-block-public-access.html`이며 mutable `/latest/` 문서이므로 그 자체는 승인 근거가 아니다. Rule activation 전에 Source Reference는 최소한 다음 의미를 검증 가능한 형태로 보존해야 한다.
+
+- source identity와 source revision/version
+- 요구사항의 정확한 locator/section
+- retrieval timestamp
+- immutable captured artifact reference와 content hash
+- 승인 대상 Rule ID/version 및 semantic content hash
+- human approver identity와 approval timestamp
+
+정확한 필드명, source version 값, locator, artifact key, hash와 Approval Schema는 실제 evidence capture 및 Shared Contract 구현 시 확정한다. 이 값들이 없거나 승인 대상 semantic content와 binding되지 않으면 Human Approval이 유효하지 않으며 Rule은 ACTIVE가 될 수 없다.
+
+Closed-loop의 architecture invariant는 다음과 같다.
+
+- Initial과 Post-Deploy의 Governance 판정은 각각 평가 대상 Commit의 Terraform 표현을 사용한다.
+- Parser/Tool/Agent 오류를 Governance 위반으로 변환하지 않는다.
+- AWS Actual Public Access Block 값은 Read-Only AWS Resource Tool이 관찰하고 D 영역 Deployment Workflow가 별도 verification artifact로 소유한다.
+- Closed-loop 성공에는 새 Post-Deploy IaC 평가의 준수 결과와 AWS Actual 관찰의 일치가 모두 필요하다.
+- Actual 불일치나 수집 오류는 IaC 판정을 바꾸지 않지만 완료를 차단하며 두 결과를 모두 보존한다.
+- Pre/Post-Deploy 실행은 새 ID와 Artifact를 만들고 Initial 기록을 덮어쓰지 않는다.
+- Apply는 Commit과 Plan에 binding된 별도 Human Approval 이후에만 GitHub Actions가 수행한다.
+
+Assessment, Deployment, Approval, Apply, Verification의 exact 상태 집합, command 이름, API field와 ID 관계는 실행 Shared Contract가 생길 때까지 Open Decision이다.
+
+Producer/Consumer 책임은 기존 Domain 경계를 유지한다.
+
+- A: Job/API/Auth/Data와 Contract 저장·조회
+- B: Global Control/Rule Registry, source evidence와 Rule activation approval
+- C: Assessment, Result Schema Validation, deterministic Finding 생성
+- D: Remediation, 고객 PR/CI/Plan/Approval/Apply, Actual verification, Post-Deploy 연결
+- Shared Contract: ID, Enum, Schema 호환성과 Fixture
+
 ## Contract 변경 절차
 
 1. Producer, Consumer, 영향 Owner를 식별한다.

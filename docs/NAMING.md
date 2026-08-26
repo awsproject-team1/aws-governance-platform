@@ -118,13 +118,19 @@ governance-dev-audit
 
 ## Rule ID
 
-확정 형식:
+Candidate 형식:
 
 ```text
 <SOURCE>-<RESOURCE_GROUP>-<CONTROL>-<NNN>
 ```
 
-예:
+첫 Slice 계획용 Candidate example:
+
+```text
+GLOBAL-S3-PAB-001
+```
+
+추가 설계 예:
 
 ```text
 CUSTOMER-S3-ENC-001
@@ -132,11 +138,17 @@ GLOBAL-SG-PUBLIC-001
 CUSTOMER-IAM-MFA-001
 ```
 
-원문 절 번호는 Rule ID에 넣지 않는다. 원문이 개정되어도 Rule identity와 과거 Finding 연결을 유지하기 위해서다. 의미가 바뀌면 ID 재사용 여부보다 Rule `version` 증가와 재승인 규칙을 우선 적용한다.
+위 형식과 값은 Shared Contract, Registry 및 Human Approval 전까지 예약되거나 ACTIVE인 식별자가 아니다. 원문 절 번호를 Rule ID에 넣지 않고 의미 변경 시 version과 재승인을 검토한다는 방향만 유지한다. 정확한 ID format, version 정책과 재사용 규칙은 Rule Registry 구현 시 확정한다.
 
 ## Control Key
 
-현재 설계는 다음과 같은 점 구분 key를 사용한다.
+첫 Slice 계획용 Candidate example:
+
+```text
+s3.public_access_block.enabled
+```
+
+추가 설계 예시는 다음과 같다.
 
 ```text
 s3.encryption.at_rest
@@ -144,7 +156,7 @@ sg.ingress.least_privilege
 cloudtrail.trail.enabled
 ```
 
-Control Key는 Control Registry가 소유한다. 위 예시를 넘어서는 전체 조합 규칙, 약어 목록, rename/version 정책은 아직 확정되지 않았다.
+Control Key는 향후 Control Registry가 소유한다. 위 값은 Shared Contract와 Registry review 전까지 실제 key로 예약되지 않는다. 전체 조합 규칙, 약어 목록, rename/version 정책은 아직 확정되지 않았다.
 
 ## Domain ID와 API Field
 

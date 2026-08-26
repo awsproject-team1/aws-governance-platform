@@ -3,12 +3,17 @@ description: 실제 구현 가능한 기능 작업을 정의합니다.
 title: "[Feature] "
 labels: []
 body:
+  - type: markdown
+    attributes:
+      value: "이 템플릿의 Parent 참조는 설명용입니다. Issue 생성 후 Parent의 Add sub-issue 기능으로 GitHub Native Sub-issue 관계를 반드시 연결합니다."
   - type: input
     id: parent
     attributes:
-      label: Parent Issue
+      label: Parent Issue reference
       placeholder: "#123"
       description: Parent 번호를 기록한 뒤 GitHub의 native Parent/Sub-issue 관계도 별도로 연결합니다.
+    validations:
+      required: true
   - type: textarea
     id: background
     attributes:
@@ -64,9 +69,9 @@ body:
     id: validation
     attributes:
       label: Test / Validation
-      description: 실행할 명령 또는 확인 절차를 작성합니다.
+      description: PR 전 로컬 검증과 PR 후 Required CI를 구분해 작성합니다.
     validations:
       required: true
   - type: markdown
     attributes:
-      value: "Issue 생성 후 해당 영역 Owner가 Assignee, 공유 Milestone, Project 상태와 실제 Parent/Sub-issue 및 Blocked by/Blocking 관계를 설정합니다. 구현 Agent는 이 Issue의 Scope, Acceptance Criteria, Test / Validation과 직접 의존 관계를 기준으로 작업합니다."
+      value: "Issue 생성 후 해당 영역 Owner가 Assignee, 공유 Milestone, Project 상태와 실제 Parent/Sub-issue 및 Blocked by/Blocking 관계를 설정합니다. 구현 Agent는 이 Issue의 Scope, Acceptance Criteria, Test / Validation과 직접 의존 관계를 기준으로 작업합니다. 구현과 로컬 검증 후 dev 대상 PR을 생성하고, 사람의 Review/Merge와 dev 반영을 확인한 뒤 Issue를 수동으로 닫고 다음 Sub-issue를 시작합니다."
