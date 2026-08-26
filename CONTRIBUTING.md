@@ -29,6 +29,9 @@ dev → Pull Request → Required CI / Review → Squash Merge → main
 - 실제 구현은 Parent 아래 Sub-issue 또는 Bug 단위로 진행합니다.
 - Parent 전용 branch는 만들지 않습니다.
 - Sub-issue는 Review와 Merge가 가능한 크기로 유지하되 억지로 지나치게 작게 나누지 않습니다.
+- 개별 Sub-issue의 구현과 PR은 해당 Sub-issue의 Scope, Acceptance Criteria, Test / Validation을 완료 기준으로 사용합니다.
+- Sub-issue만으로 범위를 판단할 수 없거나 Parent의 Scope·의존 관계가 변경된 경우에만 구현 중 Parent Issue를 다시 확인합니다.
+- Parent Issue의 전체 Acceptance Criteria와 주요 산출물은 모든 소속 Sub-issue가 완료된 뒤 Parent를 종료하는 단계에서 종합적으로 검증합니다.
 - 다른 Owner 영역이나 공통 Contract에 영향을 주면 구현 전에 관련 Owner와 합의합니다.
 
 ## Branch Naming

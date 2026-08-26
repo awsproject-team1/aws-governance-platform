@@ -33,7 +33,7 @@ body:
     id: acceptance
     attributes:
       label: Acceptance Criteria
-      description: 구현, Test, 문서 완료 조건을 체크리스트로 작성합니다.
+      description: 이 Sub-issue의 구현과 PR에 적용할 구현, Test, 문서 완료 조건을 체크리스트로 작성합니다.
     validations:
       required: true
   - type: dropdown
