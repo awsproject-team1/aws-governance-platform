@@ -34,6 +34,41 @@ dev → Pull Request → Required CI / Review → Squash Merge → main
 - Parent Issue의 전체 Acceptance Criteria와 주요 산출물은 모든 소속 Sub-issue가 완료된 뒤 Parent를 종료하는 단계에서 종합적으로 검증합니다.
 - 다른 Owner 영역이나 공통 Contract에 영향을 주면 구현 전에 관련 Owner와 합의합니다.
 
+### 역할과 작업 조정
+
+- A/B/C/D 영역 Owner는 자신의 기술 범위와 최초 Sub-issue를 정의합니다.
+- Parent Owner는 Parent의 목표, Scope, 의존 관계와 최종 완료 여부를 관리합니다.
+- Milestone 담당자는 기술 명세를 대신 작성하지 않고 일정, 우선순위, 중복, 의존 관계와 Milestone 포함 여부를 관리합니다.
+- 팀원은 구현 중 발견한 Sub-issue를 직접 생성할 수 있으며, Milestone 담당자가 검토한 뒤 현재 Milestone 또는 Backlog에 배치합니다.
+- 공통 Contract는 Producer와 Consumer가 함께 검토하며, 실제 담당자는 Issue Assignee와 Project에서 관리합니다.
+
+### Milestone과 Project
+
+- Milestone은 Sprint 또는 통합 결과물처럼 마감일이 있는 작업 묶음으로 사용합니다.
+- Parent Issue와 PR에는 Milestone을 지정하지 않고, 실제 완료 가능한 Sub-issue와 Bug에 지정합니다.
+- 같은 작업을 Parent, Sub-issue, PR에 중복 배정하지 않으며 Milestone 진행률은 Sub-issue와 Bug의 종료 상태로 판단합니다.
+- 현재 목표를 막는 새 작업만 진행 중인 Milestone에 추가하고, 선택 기능과 후속 개선은 다음 Milestone 또는 Backlog로 이동합니다.
+- 실제 일정과 진행 상태는 Repository 문서가 아니라 GitHub Milestone과 Project를 정본으로 사용합니다.
+
+Project 상태는 다음 순서로 관리합니다.
+
+```text
+Proposed → Ready → In Progress → Review → Done
+```
+
+- `Proposed`: 새로 제안되어 범위와 일정이 아직 검토되지 않은 상태
+- `Ready`: Scope, Acceptance Criteria, Test / Validation, Owner와 의존 관계가 확인된 상태
+- `In Progress`: 구현 중인 상태
+- `Review`: PR 검토 중인 상태
+- `Done`: 필요한 검증과 `dev` Merge가 끝나고 Issue가 종료된 상태
+
+### Parent와 의존 관계
+
+- Sub-issue는 GitHub의 실제 Parent/Sub-issue 관계로 연결하며, Issue 본문의 Parent 번호만으로 연결됐다고 간주하지 않습니다.
+- 선행 작업이 필요한 경우 GitHub의 `Blocked by` / `Blocking` 관계와 Issue의 `Depends on` / `Blocks`를 일치시킵니다.
+- 공통 Contract, Repository Snapshot, Approval처럼 다른 영역을 막는 작업은 구현 시작 전에 의존 관계를 연결합니다.
+- 순환 의존 관계를 만들지 않으며, 구현자는 `Ready` 상태이고 선행 작업이 끝난 Issue부터 착수합니다.
+
 ## Branch Naming
 
 기본 형식은 `type/kebab-case`입니다.
@@ -74,6 +109,21 @@ PR에는 다음을 포함합니다.
 - 다른 Owner 확인 필요 여부
 
 Merge 조건은 해당 PR의 Required CI 통과와 다른 팀원 최소 1명 승인입니다. CI 실패 상태에서는 Merge하지 않습니다. Squash Merge를 기본으로 하며 Merge 후 더 이상 필요 없는 feature branch는 삭제할 수 있습니다.
+
+일반 PR은 `dev`를 대상으로 하므로 Related Issue에는 `Refs #번호`를 사용하고, Merge 후 해당 Sub-issue를 종료합니다. GitHub의 closing keyword는 기본 branch 대상 PR에서만 동작하므로 `Closes`는 실제 자동 종료 조건을 충족할 때만 사용합니다.
+
+## GitHub Repository 보호 규칙
+
+`main`과 `dev`에는 GitHub Ruleset을 적용해 문서의 협업 규칙을 실제로 강제합니다.
+
+- Pull Request와 다른 팀원 최소 1명의 승인을 요구합니다.
+- 최신 Push에 대한 승인과 Review 대화 해결을 요구합니다.
+- 적용되는 Required CI가 성공해야 Merge할 수 있습니다.
+- Force Push와 branch 삭제를 차단하고 Squash Merge를 사용합니다.
+- 관리자 Bypass는 긴급 복구에 필요한 최소 인원으로 제한합니다.
+- 일반 `main` 통합 PR은 `dev`에서만 생성합니다.
+
+Path Filter로 실행되지 않을 수 있는 Workflow를 그대로 Required Check로 등록하지 않습니다. 모든 PR에서 완료 상태를 보고하는 공통 PR Gate를 두고 변경 영역별 검사를 연결합니다. 목표 규칙은 이 문서가 정본이며, 실제 적용 상태와 Bypass 대상은 GitHub Repository Settings가 정본입니다.
 
 ## Test와 CI
 

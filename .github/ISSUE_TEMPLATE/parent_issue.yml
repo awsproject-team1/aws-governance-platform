@@ -53,4 +53,4 @@ body:
       description: Depends on / Provides to를 작성합니다.
   - type: markdown
     attributes:
-      value: "Parent Issue에는 전용 branch/PR을 만들지 않습니다. 실제 작업은 Sub-issue로 관리하고, 모든 소속 Sub-issue가 완료된 뒤 Parent의 전체 Acceptance Criteria와 주요 산출물을 종합 검증합니다."
+      value: "Parent Issue에는 전용 branch/PR과 Milestone을 만들지 않습니다. 실제 작업은 GitHub의 native Sub-issue 관계로 연결해 관리하고, 모든 소속 Sub-issue가 완료된 뒤 Parent의 전체 Acceptance Criteria와 주요 산출물을 종합 검증합니다."

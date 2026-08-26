@@ -9,7 +9,7 @@
 ## Related Issue
 
 - Parent: #
-- Refs/Closes: #
+- Refs: #
 
 ## PR Type
 

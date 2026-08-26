@@ -8,6 +8,7 @@ body:
     attributes:
       label: Parent Issue
       placeholder: "#123"
+      description: Parent 번호를 기록한 뒤 GitHub의 native Parent/Sub-issue 관계도 별도로 연결합니다.
   - type: textarea
     id: background
     attributes:
@@ -66,3 +67,6 @@ body:
       description: 실행할 명령 또는 확인 절차를 작성합니다.
     validations:
       required: true
+  - type: markdown
+    attributes:
+      value: "Issue 생성 후 Assignee, Milestone, Project 상태와 실제 Parent/Sub-issue 및 Blocked by/Blocking 관계를 설정합니다."
