@@ -69,4 +69,4 @@ body:
       required: true
   - type: markdown
     attributes:
-      value: "Issue 생성 후 Assignee, Milestone, Project 상태와 실제 Parent/Sub-issue 및 Blocked by/Blocking 관계를 설정합니다."
+      value: "Issue 생성 후 해당 영역 Owner가 Assignee, 공유 Milestone, Project 상태와 실제 Parent/Sub-issue 및 Blocked by/Blocking 관계를 설정합니다. 구현 Agent는 이 Issue의 Scope, Acceptance Criteria, Test / Validation과 직접 의존 관계를 기준으로 작업합니다."

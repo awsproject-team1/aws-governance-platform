@@ -36,19 +36,22 @@ dev → Pull Request → Required CI / Review → Squash Merge → main
 
 ### 역할과 작업 조정
 
-- A/B/C/D 영역 Owner는 자신의 기술 범위와 최초 Sub-issue를 정의합니다.
+- A/B/C/D 영역 Owner는 공통 Issue Template에 따라 자신의 기술 범위와 최초·추가 Sub-issue를 정의하고 관리합니다.
 - Parent Owner는 Parent의 목표, Scope, 의존 관계와 최종 완료 여부를 관리합니다.
-- Milestone 담당자는 기술 명세를 대신 작성하지 않고 일정, 우선순위, 중복, 의존 관계와 Milestone 포함 여부를 관리합니다.
-- 팀원은 구현 중 발견한 Sub-issue를 직접 생성할 수 있으며, Milestone 담당자가 검토한 뒤 현재 Milestone 또는 Backlog에 배치합니다.
+- 각 Owner는 공유 Milestone과 Project에서 자기 Sub-issue의 Assignee, 상태와 직접적인 의존 관계를 갱신합니다. 이를 위해 모든 영역의 Issue 본문을 반복해서 읽는 별도 Milestone 관리 Agent를 두지 않습니다.
+- 구현 중 발견한 Sub-issue가 기존 Parent Scope 안에서 현재 목표를 막는다면 해당 Owner가 현재 Milestone에 배치할 수 있습니다. 선택 기능과 후속 개선은 Backlog로 보냅니다.
+- 사람이 공유 Project에서 전체 일정과 병목을 확인하고, Milestone 기간·전체 범위·Owner 간 우선순위·담당 재배치와 공통 Contract 변경을 종합 판단합니다.
 - 공통 Contract는 Producer와 Consumer가 함께 검토하며, 실제 담당자는 Issue Assignee와 Project에서 관리합니다.
 
 ### Milestone과 Project
 
 - Milestone은 Sprint 또는 통합 결과물처럼 마감일이 있는 작업 묶음으로 사용합니다.
+- 같은 Sprint 또는 통합 결과물을 수행하는 A/B/C/D는 Owner별 Milestone을 따로 만들지 않고 하나의 공유 Milestone을 사용합니다.
 - Parent Issue와 PR에는 Milestone을 지정하지 않고, 실제 완료 가능한 Sub-issue와 Bug에 지정합니다.
 - 같은 작업을 Parent, Sub-issue, PR에 중복 배정하지 않으며 Milestone 진행률은 Sub-issue와 Bug의 종료 상태로 판단합니다.
 - 현재 목표를 막는 새 작업만 진행 중인 Milestone에 추가하고, 선택 기능과 후속 개선은 다음 Milestone 또는 Backlog로 이동합니다.
 - 실제 일정과 진행 상태는 Repository 문서가 아니라 GitHub Milestone과 Project를 정본으로 사용합니다.
+- 전체 일정은 공유 Project의 Owner, Status, Priority, Planned Day와 Blocked 상태로 확인하며, 각 Owner는 자기 항목만 갱신합니다.
 
 Project 상태는 다음 순서로 관리합니다.
 

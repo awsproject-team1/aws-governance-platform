@@ -41,6 +41,16 @@ Repository 전체 문서나 디렉터리를 기본 Context로 적재하지 않�
 
 세부 책임과 금지 경계는 `docs/DESIGN.md`를 따른다. 고객 Workload Terraform을 `infrastructure/`에 넣지 않는다.
 
+## 역할별 GitHub 작업 범위
+
+- GitHub 작업을 시작할 때 요청된 Parent Issue, Issue Assignee, Related Domain과 영향받는 경로를 기준으로 A/B/C/D 중 현재 역할을 먼저 확인한다.
+- Issue 계획을 명시적으로 요청받은 경우 해당 역할의 Parent Issue와 직접 연결된 의존 관계만 확인하고, 그 Parent 아래의 Sub-issue만 생성·관리한다. 다른 역할의 Parent와 전체 Milestone 항목을 기본 Context로 읽지 않는다.
+- 이미 생성된 Sub-issue를 구현할 때는 Issue Template을 다시 읽지 않고, 선택한 Sub-issue의 Scope, Acceptance Criteria, Test / Validation과 직접 연결된 의존 Issue만 확인한다.
+- Sub-issue가 자체 완결적이면 구현 중 Parent를 다시 읽지 않는다. Sub-issue만으로 범위를 판단할 수 없거나 Parent Scope·의존 관계가 변경됐을 때, 또는 모든 Sub-issue 완료 후 Parent를 종료할 때만 다시 확인한다.
+- A/B/C/D는 같은 공유 Milestone과 Project 안에서 각자 담당 Sub-issue의 Assignee와 상태를 갱신한다. Milestone 기간·전체 범위·Owner 간 우선순위는 임의로 변경하지 않고 사람이 종합 판단한다.
+- 공통 Contract 또는 다른 Owner 영역에 영향이 있을 때만 관련 Parent·Issue와 정본을 추가로 확인하고 해당 Owner와 합의한다.
+- 이 절은 Context와 책임 범위를 제한하는 규칙이다. Issue 생성·수정 등 GitHub 원격 변경은 사용자의 명시적 요청이 있을 때만 수행한다.
+
 ## Skills
 
 - 구현 작업: `.agents/skills/implement-task/SKILL.md`
