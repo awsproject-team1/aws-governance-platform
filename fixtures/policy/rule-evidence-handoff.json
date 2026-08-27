@@ -1,0 +1,18 @@
+{
+  "rule_pin": {
+    "rule_id": "GLOBAL-S3-PAB-001",
+    "version": 1
+  },
+  "policy_evidence": {
+    "evidence_id": "evidence-aws-s3-8",
+    "source_reference": {
+      "document_id": "aws-fsbp-1-0-0",
+      "document_version": "2026.08.25",
+      "section": "S3.8",
+      "content_hash": "sha256:1f83e123d34218b244010893550a8bb2851413fbefca9ed5ea9347ceb901581a"
+    },
+    "locator": "fixture://aws-fsbp-1-0-0/S3.8",
+    "excerpt": "S3 범용 버킷에는 버킷 수준 Block Public Access 설정이 필요하다."
+  },
+  "handoff_note": "Area C/D는 Finding의 rule_id + rule_version으로 Rule을 찾고, Rule source_references와 정확히 일치하는 PolicyEvidence만 근거로 연결한다. 이 fixture는 PASS/FAIL이나 Remediation 결과를 만들지 않는다."
+}

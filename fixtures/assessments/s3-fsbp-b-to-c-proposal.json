@@ -1,0 +1,121 @@
+{
+  "contract_status": "AREA_B_PRODUCER_READY_AREA_C_ACCEPTANCE_PENDING",
+  "shared_contract_changes": [],
+  "existing_executable_contracts": [
+    "EffectiveRuleSet",
+    "Rule",
+    "SourceReference",
+    "PolicyEvidence",
+    "RuleEvaluationMetric",
+    "SourceScoreCoverage"
+  ],
+  "rule_pin": {
+    "rule_id": "GLOBAL-S3-PAB-001",
+    "version": 1
+  },
+  "approved_source_reference": {
+    "document_id": "aws-fsbp-1-0-0",
+    "document_version": "2026.08.25",
+    "section": "S3.8",
+    "content_hash": "sha256:1f83e123d34218b244010893550a8bb2851413fbefca9ed5ea9347ceb901581a"
+  },
+  "official_revalidation": {
+    "current_source_reference": {
+      "document_id": "aws-fsbp-1-0-0",
+      "document_version": "1.0.0+2026-08-26.s3-v1",
+      "section": "S3.8",
+      "content_hash": "sha256:304a3934022077887457717c24d3ed7a27ef1e09a6b3564d9c0a60cfbe482463"
+    },
+    "semantic_fields_match": true,
+    "source_reference_matches": false,
+    "requires_new_rule_version_and_human_approval": true
+  },
+  "execution_gate": {
+    "deliver_as_officially_revalidated_rule": false,
+    "reason": "The approved v1 Rule pins legacy fixture evidence. A server-assigned new Rule version and human approval are required before the official snapshot reference can enter an EffectiveRuleSet."
+  },
+  "metric_shape_examples_for_existing_v1_contract_only": [
+    {
+      "case": "positive",
+      "metric": {
+        "resource_id": "arn:aws:s3:::fixture-private-bucket",
+        "rule_id": "GLOBAL-S3-PAB-001",
+        "rule_version": 1,
+        "source_id": "aws-fsbp-1-0-0",
+        "source_type": "GLOBAL",
+        "severity": "HIGH",
+        "evaluation_status": "PASS",
+        "execution_status": "SUCCESS"
+      },
+      "expected_source_metric": {
+        "source_id": "aws-fsbp-1-0-0",
+        "source_type": "GLOBAL",
+        "scoring_version": "1",
+        "score": 100.0,
+        "coverage": 100.0,
+        "pass_count": 1,
+        "fail_count": 0,
+        "manual_review_count": 0,
+        "not_applicable_count": 0,
+        "execution_error_count": 0
+      }
+    },
+    {
+      "case": "negative",
+      "metric": {
+        "resource_id": "arn:aws:s3:::fixture-public-bucket",
+        "rule_id": "GLOBAL-S3-PAB-001",
+        "rule_version": 1,
+        "source_id": "aws-fsbp-1-0-0",
+        "source_type": "GLOBAL",
+        "severity": "HIGH",
+        "evaluation_status": "FAIL",
+        "execution_status": "SUCCESS"
+      },
+      "expected_source_metric": {
+        "source_id": "aws-fsbp-1-0-0",
+        "source_type": "GLOBAL",
+        "scoring_version": "1",
+        "score": 0.0,
+        "coverage": 100.0,
+        "pass_count": 0,
+        "fail_count": 1,
+        "manual_review_count": 0,
+        "not_applicable_count": 0,
+        "execution_error_count": 0
+      }
+    },
+    {
+      "case": "tool_error",
+      "metric": {
+        "resource_id": "arn:aws:s3:::fixture-unreadable-bucket",
+        "rule_id": "GLOBAL-S3-PAB-001",
+        "rule_version": 1,
+        "source_id": "aws-fsbp-1-0-0",
+        "source_type": "GLOBAL",
+        "severity": "HIGH",
+        "evaluation_status": null,
+        "execution_status": "ERROR"
+      },
+      "expected_source_metric": {
+        "source_id": "aws-fsbp-1-0-0",
+        "source_type": "GLOBAL",
+        "scoring_version": "1",
+        "score": null,
+        "coverage": null,
+        "pass_count": 0,
+        "fail_count": 0,
+        "manual_review_count": 0,
+        "not_applicable_count": 0,
+        "execution_error_count": 1
+      }
+    }
+  ],
+  "area_c_acceptance_required": [
+    "Choose the deterministic evaluator binding mechanism for an AWS Rule without making check_id or check_version mandatory unilaterally.",
+    "Agree the observation/fact representation for the four S3.8 bucket-level settings and the behavior for missing observations.",
+    "Guarantee one terminal metric per scheduled Resource x Rule x Source identity so omitted metrics cannot inflate Coverage.",
+    "Derive source_id, source_type, severity, Rule identity, and Source Reference from the EffectiveRuleSet rather than LLM output.",
+    "Keep PASS/FAIL ownership in Area C and keep scoring ownership in Area B."
+  ]
+}

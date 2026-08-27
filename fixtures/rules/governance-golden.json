@@ -1,0 +1,179 @@
+{
+  "policy_sources": [
+    {
+      "source_id": "aws-fsbp-1-0-0",
+      "source_type": "GLOBAL",
+      "source_version": "2026.08.25"
+    },
+    {
+      "source_id": "cloud-infra-security-checklist",
+      "source_type": "CUSTOMER",
+      "source_version": "2026.08"
+    }
+  ],
+  "controls": [
+    {
+      "control_key": "s3.encryption.at_rest"
+    },
+    {
+      "control_key": "s3.public_access.approval_record"
+    },
+    {
+      "control_key": "s3.public_access_block.enabled"
+    }
+  ],
+  "mappings": [
+    {
+      "source_reference": {
+        "document_id": "aws-fsbp-1-0-0",
+        "document_version": "2026.08.25",
+        "section": "S3.8",
+        "content_hash": "sha256:1f83e123d34218b244010893550a8bb2851413fbefca9ed5ea9347ceb901581a"
+      },
+      "resource_type": "aws_s3_bucket",
+      "control_key": "s3.public_access_block.enabled"
+    },
+    {
+      "source_reference": {
+        "document_id": "cloud-infra-security-checklist",
+        "document_version": "2026.08",
+        "section": "5.1-B",
+        "content_hash": "sha256:8e252ed8f701d2d7c7d9ded89feb11a0855e1c09836ef2fb00372b1344f5e729"
+      },
+      "resource_type": "aws_s3_bucket",
+      "control_key": "s3.public_access_block.enabled"
+    },
+    {
+      "source_reference": {
+        "document_id": "cloud-infra-security-checklist",
+        "document_version": "2026.08",
+        "section": "5.1-A",
+        "content_hash": "sha256:36765bc938b6d718db526fae053c294e03497879e7aa5f143a315265a6011029"
+      },
+      "resource_type": "aws_s3_bucket",
+      "control_key": "s3.public_access.approval_record"
+    },
+    {
+      "source_reference": {
+        "document_id": "cloud-infra-security-checklist",
+        "document_version": "2026.08",
+        "section": "5.1-F",
+        "content_hash": "sha256:f6cfb65c7777ed76a4b1864fe2449d9e8442251ea6acf6bf944772b4c01f19d0"
+      },
+      "resource_type": "aws_s3_bucket",
+      "control_key": "s3.encryption.at_rest"
+    }
+  ],
+  "rules": [
+    {
+      "rule_id": "CUSTOMER-S3-ENC-001",
+      "version": 1,
+      "status": "ACTIVE",
+      "source_type": "CUSTOMER",
+      "source_references": [
+        {
+          "document_id": "cloud-infra-security-checklist",
+          "document_version": "2026.08",
+          "section": "5.1-F",
+          "content_hash": "sha256:f6cfb65c7777ed76a4b1864fe2449d9e8442251ea6acf6bf944772b4c01f19d0"
+        }
+      ],
+      "resource_type": "aws_s3_bucket",
+      "control_key": "s3.encryption.at_rest",
+      "evaluation_type": "IAC",
+      "severity": "MEDIUM",
+      "requirement": "S3 버킷은 저장 시 서버 측 암호화를 적용해야 한다.",
+      "remediation_type": "IAC"
+    },
+    {
+      "rule_id": "CUSTOMER-S3-PROC-001",
+      "version": 1,
+      "status": "ACTIVE",
+      "source_type": "CUSTOMER",
+      "source_references": [
+        {
+          "document_id": "cloud-infra-security-checklist",
+          "document_version": "2026.08",
+          "section": "5.1-A",
+          "content_hash": "sha256:36765bc938b6d718db526fae053c294e03497879e7aa5f143a315265a6011029"
+        }
+      ],
+      "resource_type": "aws_s3_bucket",
+      "control_key": "s3.public_access.approval_record",
+      "evaluation_type": "MANUAL",
+      "severity": "LOW",
+      "requirement": "퍼블릭 스토리지 운영에는 승인 근거가 존재해야 한다.",
+      "remediation_type": "MANUAL"
+    },
+    {
+      "rule_id": "CUSTOMER-S3-PAB-003",
+      "version": 2,
+      "status": "ACTIVE",
+      "source_type": "CUSTOMER",
+      "source_references": [
+        {
+          "document_id": "cloud-infra-security-checklist",
+          "document_version": "2026.08",
+          "section": "5.1-B",
+          "content_hash": "sha256:8e252ed8f701d2d7c7d9ded89feb11a0855e1c09836ef2fb00372b1344f5e729"
+        }
+      ],
+      "resource_type": "aws_s3_bucket",
+      "control_key": "s3.public_access_block.enabled",
+      "evaluation_type": "IAC",
+      "severity": "HIGH",
+      "requirement": "퍼블릭 스토리지를 제외한 모든 버킷에 Block Public Access를 적용해야 한다.",
+      "remediation_type": "IAC"
+    },
+    {
+      "rule_id": "GLOBAL-S3-PAB-001",
+      "version": 1,
+      "status": "ACTIVE",
+      "source_type": "GLOBAL",
+      "source_references": [
+        {
+          "document_id": "aws-fsbp-1-0-0",
+          "document_version": "2026.08.25",
+          "section": "S3.8",
+          "content_hash": "sha256:1f83e123d34218b244010893550a8bb2851413fbefca9ed5ea9347ceb901581a"
+        }
+      ],
+      "resource_type": "aws_s3_bucket",
+      "control_key": "s3.public_access_block.enabled",
+      "evaluation_type": "AWS",
+      "severity": "HIGH",
+      "requirement": "S3 범용 버킷은 네 가지 버킷 수준 Block Public Access 설정을 모두 적용해야 한다.",
+      "remediation_type": "GUIDE"
+    }
+  ],
+  "approvals": [
+    {
+      "rule_id": "CUSTOMER-S3-ENC-001",
+      "version": 1,
+      "rule_content_hash": "sha256:74dd7b610aab334ecfb5494a191239de8d5edac26194797e6b750cdf600d601d",
+      "approved_by": "fixture-admin",
+      "approved_at": "2026-08-25T00:00:00Z"
+    },
+    {
+      "rule_id": "CUSTOMER-S3-PROC-001",
+      "version": 1,
+      "rule_content_hash": "sha256:c10fd7ae3bcc477ee251ed366a3789109d76030c25c31727bf7b130488f0ba3e",
+      "approved_by": "fixture-admin",
+      "approved_at": "2026-08-25T00:00:00Z"
+    },
+    {
+      "rule_id": "CUSTOMER-S3-PAB-003",
+      "version": 2,
+      "rule_content_hash": "sha256:0d2bc21c72ee0880abc4b8b804371f9dade13bd58261bd1a3dca69a2469dd1bf",
+      "approved_by": "fixture-admin",
+      "approved_at": "2026-08-25T00:00:00Z"
+    },
+    {
+      "rule_id": "GLOBAL-S3-PAB-001",
+      "version": 1,
+      "rule_content_hash": "sha256:2b771aa608eb2af13e8f92f9f01b6a88fc3b27c9b141cb342de112a186a517bf",
+      "approved_by": "fixture-admin",
+      "approved_at": "2026-08-25T00:00:00Z"
+    }
+  ]
+}

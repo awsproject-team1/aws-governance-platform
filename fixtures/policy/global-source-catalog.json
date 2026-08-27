@@ -1,0 +1,107 @@
+{
+  "catalog_kind": "verified-reference-definitions",
+  "not_a_frozen_snapshot": true,
+  "definitions": [
+    {
+      "source_id": "aws-fsbp-1-0-0",
+      "publisher": "AWS",
+      "framework_version": "1.0.0",
+      "official_reference_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/fsbp-standard.html",
+      "verified_at": "2026-08-26",
+      "role": "SECURITY_BASELINE",
+      "result_kind": "SCORE_AND_COVERAGE",
+      "score_label": "FSBP 기반 Governance Score",
+      "default_profile_eligible": true,
+      "required_capabilities": [],
+      "global_evaluation_scope": [
+        "승인된 FSBP Control의 Resource별 IAC/AWS/HYBRID/MANUAL 평가"
+      ],
+      "customer_defined_scope": [],
+      "version_strategy": "framework_version + snapshot_date + selected control_set_hash"
+    },
+    {
+      "source_id": "cis-aws-foundations-5-0-0",
+      "publisher": "CIS",
+      "framework_version": "5.0.0",
+      "official_reference_url": "https://www.cisecurity.org/benchmark/amazon_web_services",
+      "verified_at": "2026-08-26",
+      "role": "SECURITY_BASELINE",
+      "result_kind": "SCORE_AND_COVERAGE",
+      "score_label": "CIS 기반 Governance Score",
+      "default_profile_eligible": false,
+      "required_capabilities": [],
+      "global_evaluation_scope": [
+        "승인된 CIS Control의 계정/IAM/로깅/네트워크 평가",
+        "자동화할 수 없는 CIS 요구사항은 Manual Review 또는 Coverage Gap으로 유지"
+      ],
+      "customer_defined_scope": [],
+      "version_strategy": "benchmark version + snapshot_date + selected control_set_hash",
+      "delivery_or_mapping_reference": "https://docs.aws.amazon.com/securityhub/latest/userguide/cis-aws-foundations-benchmark.html"
+    },
+    {
+      "source_id": "aws-resource-tagging-1-0-0",
+      "publisher": "AWS",
+      "framework_version": "1.0.0",
+      "official_reference_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/standards-tagging.html",
+      "verified_at": "2026-08-26",
+      "role": "GOVERNANCE_HYGIENE",
+      "result_kind": "SCORE_AND_COVERAGE",
+      "score_label": "AWS Resource Tagging Score",
+      "default_profile_eligible": false,
+      "required_capabilities": [],
+      "global_evaluation_scope": [
+        "평가 대상 Resource의 Tag 지원 여부",
+        "지원 Resource에 하나 이상의 Tag가 존재하는지 여부"
+      ],
+      "customer_defined_scope": [
+        "필수 Tag Key",
+        "Tag Value 형식",
+        "Environment별 Tag 조건",
+        "Owner/CostCenter/Project 조직 기준"
+      ],
+      "version_strategy": "framework_version + snapshot_date + selected control_set_hash"
+    },
+    {
+      "source_id": "aws-control-tower-controls",
+      "publisher": "AWS",
+      "framework_version": null,
+      "official_reference_url": "https://docs.aws.amazon.com/controltower/latest/controlreference/controls-reference.html",
+      "verified_at": "2026-08-26",
+      "role": "CONDITIONAL_GOVERNANCE",
+      "result_kind": "CONDITIONAL_CONTROL_COVERAGE",
+      "score_label": null,
+      "default_profile_eligible": false,
+      "required_capabilities": [
+        "AWS_ORGANIZATIONS",
+        "AWS_CONTROL_TOWER",
+        "LANDING_ZONE_AND_OU_CONTEXT",
+        "AWS_CONFIG",
+        "AWS_SECURITY_HUB"
+      ],
+      "global_evaluation_scope": [
+        "Preventive/Detective/Proactive behavior를 구분한 적용 가능한 Control 상태",
+        "Terraform에서 확인할 수 없는 Control은 IAC PASS/FAIL로 변환하지 않음"
+      ],
+      "customer_defined_scope": [],
+      "version_strategy": "snapshot_date + selected control_set_hash"
+    },
+    {
+      "source_id": "isms-p-2023-11-23",
+      "publisher": "KISA 및 관계기관",
+      "framework_version": "2023.11.23",
+      "official_reference_url": "https://isms-p.or.kr/ntcn/rcsrm/selectGnrlRcsrmList.do?rcsrmMenuCd=1001",
+      "verified_at": "2026-08-26",
+      "role": "MAPPING_EVIDENCE",
+      "result_kind": "MAPPING_AND_EVIDENCE_READINESS",
+      "score_label": null,
+      "default_profile_eligible": false,
+      "required_capabilities": [],
+      "global_evaluation_scope": [
+        "Project Control 및 승인 Rule Mapping",
+        "자동/누락 Evidence와 Manual Review 상태 표시"
+      ],
+      "customer_defined_scope": [],
+      "version_strategy": "published guide version + mapping_version"
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "authoritative_mapping": false,
+  "fixture_purpose": "ISMS-P readiness 계산과 Rule/Evidence 추적 계약 검증용 제안 Mapping",
+  "source_id": "isms-p-2023-11-23",
+  "source_version": "2023.11.23",
+  "selected_item_ids": ["2.7.1", "2.5.1", "1.4.3"],
+  "items": [
+    {
+      "item_id": "2.7.1",
+      "item_title": "암호정책 적용",
+      "applicability_scope": "고객 정보를 저장하는 S3 Resource의 저장 시 암호화",
+      "project_control_keys": ["s3.encryption.at_rest"],
+      "rule_pins": [{"rule_id": "CUSTOMER-S3-ENC-001", "version": 1}],
+      "automated_evidence_ids": ["fixture-s3-encryption-result"],
+      "missing_evidence": ["키 관리 운영 절차와 승인 기록"],
+      "finding_ids": [],
+      "remediation_ids": [],
+      "evidence_status": "PARTIAL_EVIDENCE"
+    },
+    {
+      "item_id": "2.5.1",
+      "item_title": "사용자 계정 관리",
+      "applicability_scope": "계정 관리 절차와 승인 Evidence",
+      "project_control_keys": [],
+      "rule_pins": [],
+      "automated_evidence_ids": [],
+      "missing_evidence": ["운영 계정 검토 기록과 담당자 확인"],
+      "finding_ids": [],
+      "remediation_ids": [],
+      "evidence_status": "MANUAL_REVIEW"
+    },
+    {
+      "item_id": "1.4.3",
+      "item_title": "관리체계 개선",
+      "applicability_scope": "현재 기술 Assessment 범위 밖의 관리체계 활동",
+      "project_control_keys": [],
+      "rule_pins": [],
+      "automated_evidence_ids": [],
+      "missing_evidence": [],
+      "finding_ids": [],
+      "remediation_ids": [],
+      "evidence_status": "OUT_OF_SCOPE"
+    }
+  ],
+  "expected": {
+    "selected_item_count": 3,
+    "mapped_item_count": 1,
+    "mapping_coverage": 33.3,
+    "evidence_status_counts": {
+      "MANUAL_REVIEW": 1,
+      "OUT_OF_SCOPE": 1,
+      "PARTIAL_EVIDENCE": 1
+    },
+    "must_not_contain_fields": ["score", "compliance_score", "certification_probability"]
+  }
+}

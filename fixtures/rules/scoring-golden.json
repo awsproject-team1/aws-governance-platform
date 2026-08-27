@@ -1,0 +1,113 @@
+{
+  "rule_set_phase": "PRE_DEPLOY",
+  "note": "모든 evaluation은 PRE_DEPLOY Effective Rule Set에 pin된 Rule만 참조하며 severity는 그 Rule의 값과 일치해야 한다.",
+  "evaluations": [
+    {
+      "resource_id": "global-bucket-pass",
+      "rule_id": "GLOBAL-S3-PAB-001",
+      "rule_version": 1,
+      "source_id": "aws-fsbp-1-0-0",
+      "source_type": "GLOBAL",
+      "severity": "HIGH",
+      "evaluation_status": "PASS",
+      "execution_status": "SUCCESS"
+    },
+    {
+      "resource_id": "global-bucket-fail",
+      "rule_id": "GLOBAL-S3-PAB-001",
+      "rule_version": 1,
+      "source_id": "aws-fsbp-1-0-0",
+      "source_type": "GLOBAL",
+      "severity": "HIGH",
+      "evaluation_status": "FAIL",
+      "execution_status": "SUCCESS"
+    },
+    {
+      "resource_id": "customer-bucket-pass",
+      "rule_id": "CUSTOMER-S3-PAB-003",
+      "rule_version": 2,
+      "source_id": "cloud-infra-security-checklist",
+      "source_type": "CUSTOMER",
+      "severity": "HIGH",
+      "evaluation_status": "PASS",
+      "execution_status": "SUCCESS"
+    },
+    {
+      "resource_id": "customer-bucket-fail",
+      "rule_id": "CUSTOMER-S3-PAB-003",
+      "rule_version": 2,
+      "source_id": "cloud-infra-security-checklist",
+      "source_type": "CUSTOMER",
+      "severity": "HIGH",
+      "evaluation_status": "FAIL",
+      "execution_status": "SUCCESS"
+    },
+    {
+      "resource_id": "customer-bucket-encrypted",
+      "rule_id": "CUSTOMER-S3-ENC-001",
+      "rule_version": 1,
+      "source_id": "cloud-infra-security-checklist",
+      "source_type": "CUSTOMER",
+      "severity": "MEDIUM",
+      "evaluation_status": "PASS",
+      "execution_status": "SUCCESS"
+    },
+    {
+      "resource_id": "customer-bucket-review",
+      "rule_id": "CUSTOMER-S3-ENC-001",
+      "rule_version": 1,
+      "source_id": "cloud-infra-security-checklist",
+      "source_type": "CUSTOMER",
+      "severity": "MEDIUM",
+      "evaluation_status": "MANUAL_REVIEW",
+      "execution_status": "SUCCESS"
+    },
+    {
+      "resource_id": "customer-bucket-na",
+      "rule_id": "CUSTOMER-S3-ENC-001",
+      "rule_version": 1,
+      "source_id": "cloud-infra-security-checklist",
+      "source_type": "CUSTOMER",
+      "severity": "MEDIUM",
+      "evaluation_status": "N/A",
+      "execution_status": "SUCCESS"
+    },
+    {
+      "resource_id": "customer-bucket-error",
+      "rule_id": "CUSTOMER-S3-PAB-003",
+      "rule_version": 2,
+      "source_id": "cloud-infra-security-checklist",
+      "source_type": "CUSTOMER",
+      "severity": "HIGH",
+      "evaluation_status": null,
+      "execution_status": "ERROR"
+    }
+  ],
+  "expected": [
+    {
+      "source_id": "aws-fsbp-1-0-0",
+      "source_type": "GLOBAL",
+      "scoring_version": "1",
+      "score": 50.0,
+      "coverage": 100.0,
+      "pass_count": 1,
+      "fail_count": 1,
+      "manual_review_count": 0,
+      "not_applicable_count": 0,
+      "execution_error_count": 0
+    },
+    {
+      "source_id": "cloud-infra-security-checklist",
+      "source_type": "CUSTOMER",
+      "scoring_version": "1",
+      "score": 58.3,
+      "coverage": 75.0,
+      "pass_count": 2,
+      "fail_count": 1,
+      "manual_review_count": 1,
+      "not_applicable_count": 1,
+      "execution_error_count": 1
+    }
+  ],
+  "unweighted_customer_score_would_be": 66.7
+}

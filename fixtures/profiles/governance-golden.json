@@ -1,0 +1,21 @@
+{
+  "profile": {
+    "policy_profile_id": "profile-governance-golden",
+    "policy_profile_version": 1,
+    "rule_pins": [
+      {"rule_id": "CUSTOMER-S3-PROC-001", "version": 1},
+      {"rule_id": "GLOBAL-S3-PAB-001", "version": 1},
+      {"rule_id": "CUSTOMER-S3-PAB-003", "version": 2},
+      {"rule_id": "CUSTOMER-S3-ENC-001", "version": 1}
+    ]
+  },
+  "admin_settings": {
+    "admin_settings_snapshot_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "expected_rule_ids": {
+    "INITIAL": ["CUSTOMER-S3-ENC-001@1", "CUSTOMER-S3-PAB-003@2"],
+    "PRE_DEPLOY": ["CUSTOMER-S3-ENC-001@1", "CUSTOMER-S3-PAB-003@2", "GLOBAL-S3-PAB-001@1"],
+    "POST_DEPLOY": ["CUSTOMER-S3-ENC-001@1", "CUSTOMER-S3-PAB-003@2", "GLOBAL-S3-PAB-001@1"],
+    "MANUAL_REVIEW": ["CUSTOMER-S3-PROC-001@1"]
+  }
+}
