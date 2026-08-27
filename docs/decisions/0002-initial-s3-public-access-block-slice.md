@@ -22,7 +22,7 @@ The MVP succeeds only when one real customer-IaC finding completes Assessment, r
 - The customer remediation path is Finding → customer PR → CI/plan → human approval → GitHub Actions apply → new Post-Deploy Assessment.
 - AWS Actual Public Access Block values are owned by Deployment as separate referenced verification evidence. Closed-loop success requires both a compliant Post-Deploy IaC evaluation and matching AWS Actual observation; exact status and field names remain open.
 - A/B/C/D delivery progress uses GitHub Native Sub-issue relationships, including a final integration-validation Sub-issue so 100% progress means Parent completion.
-- Platform development PRs are created after local validation, reviewed and merged by humans, and the Sub-issue is manually closed after merge to `dev`. The next Sub-issue starts after that merge.
+- Platform development PRs are created after local validation and reviewed and merged by humans. A completed Sub-issue or Bug PR targeting the default `dev` branch uses `Closes #N`; GitHub closes the linked Issue after merge without an Agent close API call. Partial PRs use `Refs #N`, and Parent Issues remain human-closed after aggregate validation. The next Sub-issue starts after automatic closure is confirmed.
 - The agent may create Issues, branches, implementation, tests, commits, pushes, and PRs only when requested. It never performs merge.
 
 ## Consequences
@@ -41,4 +41,4 @@ The MVP succeeds only when one real customer-IaC finding completes Assessment, r
 - **HYBRID evaluation for the first rule:** Rejected because the intended initial assessment is IaC-based. AWS Actual is retained as separate verification evidence instead.
 - **Activating the Rule from a mutable URL alone:** Rejected because it cannot bind approval to an exact source revision, locator and semantic content hash.
 - **Agent direct apply:** Rejected because it violates the Read-Only Agent and Human Approval boundary.
-- **Automatic issue closure:** Deferred; manual close after `dev` merge is simpler and keeps humans responsible for delivery state.
+- **Agent or custom-workflow issue closure:** Rejected because the default `dev` branch already supports GitHub native closing keywords. Humans still review and merge; GitHub closes completed Sub-issues and Bugs linked with `Closes #N`, while the Agent never calls the Issue close API and Parent Issues remain human-closed after aggregate validation.
