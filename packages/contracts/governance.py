@@ -14,6 +14,7 @@ from typing import Any
 
 RULE_ID_PATTERN = re.compile(r"^(GLOBAL|CUSTOMER)-[A-Z0-9]+-[A-Z0-9]+-[0-9]{3}$")
 TOKEN_PATTERN = re.compile(r"[A-Z][A-Z0-9_]*")
+SCORING_VERSION_PATTERN = re.compile(r"[1-9][0-9]*")
 HASH_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
@@ -598,6 +599,36 @@ class RuleEvaluationMetric(Contract):
             evaluation_status=evaluation_status,
             execution_status=execution_status,
         )
+
+
+# Scoring version 어휘.
+#
+# 값의 정본은 알고리즘을 구현하는 Domain이 아니라 Contract 계층이다. Consumer(A의 start
+# protocol, C의 metric 생성)가 Domain 코드를 import하지 않고도 값을 검증할 수 있어야 하기
+# 때문이다. 알고리즘 자체는 계속 packages/governance/scoring/이 소유한다.
+#
+# `SCORING_VERSION`은 새 Assessment에 부여할 현재 version이고,
+# `SUPPORTED_SCORING_VERSIONS`는 이 build가 계산할 수 있는 version 집합이다. 과거
+# Assessment 재현 때문에 두 값은 같지 않을 수 있다.
+#
+# version 추가 규칙은 docs/CONTRACTS.md의 SourceScoreCoverage 절을 따른다.
+SCORING_VERSION = "1"
+SUPPORTED_SCORING_VERSIONS = frozenset({SCORING_VERSION})
+
+
+def require_supported_scoring_version(value: Any, name: str = "scoring_version") -> str:
+    """Reject a scoring version this build cannot compute.
+
+    Pinning an unknown version at Assessment start would run the whole evaluation and
+    only fail at scoring time, far from the cause. Consumers validate here instead.
+    """
+    value = _text(value, name)
+    if not SCORING_VERSION_PATTERN.fullmatch(value):
+        raise ContractValidationError(f"{name} must be a decimal integer string")
+    if value not in SUPPORTED_SCORING_VERSIONS:
+        supported = ", ".join(sorted(SUPPORTED_SCORING_VERSIONS))
+        raise ContractValidationError(f"unsupported {name}: {value}; supported: {supported}")
+    return value
 
 
 @dataclass(frozen=True)

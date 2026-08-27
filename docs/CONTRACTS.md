@@ -389,7 +389,35 @@ LOW      = 1
 - 계산 경계: Policy Source별 독립 partition
 - 금지: Cross-Source Overall Score, Control Group 최고 Severity 병합, Score 단독 배포 Gate
 
-실행 Contract는 `(RuleEvaluationMetric[], EffectiveRuleSet) → SourceScoreCoverage[]`다. 입력은 `resource_id`, pin된 `rule_id + rule_version`, `source_id`, `source_type`, Rule의 `severity`, `evaluation_status`, `execution_status`를 전달한다. 출력은 Source별 `score`, `coverage`, status별 count, `scoring_version = "1"`을 보존한다. 결과 배열 자체에는 Overall field를 두지 않는다. `source_id`는 C가 Rule의 검증된 Source Reference에서 전달해야 하는 B→C 필드다.
+실행 Contract는 `(RuleEvaluationMetric[], EffectiveRuleSet) → SourceScoreCoverage[]`다. 입력은 `resource_id`, pin된 `rule_id + rule_version`, `source_id`, `source_type`, Rule의 `severity`, `evaluation_status`, `execution_status`를 전달한다. 출력은 Source별 `score`, `coverage`, status별 count, `scoring_version = "1"`을 보존한다. 결과 배열 자체에는 Overall field를 두지 않는다. `source_id`는 C가 Rule의 검증된 Source Reference에서 전달하는 필드다. Scoring 방향은 C가 Producer, B가 Consumer다.
+
+### scoring_version
+
+값의 정본은 알고리즘을 구현하는 Domain이 아니라 **Contract 계층**이다. A의 start protocol과 C의 metric 생성이 Domain 코드를 import하지 않고도 검증할 수 있어야 하기 때문이다.
+
+- `packages.contracts.governance.SCORING_VERSION`: 새 Assessment에 부여할 현재 version
+- `packages.contracts.governance.SUPPORTED_SCORING_VERSIONS`: 이 build가 계산할 수 있는 version 집합
+- `packages.contracts.governance.require_supported_scoring_version(value)`: 형식과 지원 여부를 검증하고 `ContractValidationError`를 낸다
+
+현재 허용값은 `"1"` 하나다. 형식은 선행 0이 없는 십진 정수 문자열(`[1-9][0-9]*`)이며 `str`이다. `"01"`과 `"1.0"`은 거부한다. 같은 version이 두 표기로 존재하면 pin된 값을 비교할 수 없기 때문이다.
+
+version 추가 규칙은 다음과 같다.
+
+1. 같은 입력이 다른 출력을 내게 될 때만 version을 올린다. 가중치, 산식, 반올림, status 처리 중 하나라도 결과를 바꾸면 해당한다.
+2. version을 올리지 않고 알고리즘을 바꾸지 않는다. 과거 Assessment의 점수를 조용히 다시 쓰는 일이 된다.
+3. 새 version 추가가 기존에 pin된 Assessment의 계산 결과를 바꾸지 않는다.
+4. 어떤 Assessment가 pin하고 있는 version은 `SUPPORTED_SCORING_VERSIONS`에서 제거하지 않는다. 제거하면 그 Assessment를 재현할 수 없다.
+5. `SCORING_VERSION`(신규 부여)과 `SUPPORTED_SCORING_VERSIONS`(계산 가능)는 같지 않을 수 있다. 재현을 위해 후자가 더 넓어진다.
+
+`scoring_version`은 client가 선택할 수 없다. Assessment start 요청에 넣지 않으며 서버가 Governance에서 받아 Assessment에 pin한다. 산식 선택이 신뢰 경계 밖 입력으로 결정되면, 판정 전에 가중치를 고정한다는 규칙이 우회된다.
+
+### 빈 Effective Rule Set
+
+Phase filter 결과 `EffectiveRuleSet.rules`가 비는 것은 오류가 아니라 정상적인 결정론적 결과다. MANUAL Rule만 pin한 Profile의 `INITIAL`이 그렇고, `MANUAL_REVIEW` 모드와 과거 Assessment 재현에서도 정상적으로 발생한다. 따라서 `build_effective_rule_set`은 이 경우 예외를 내지 않는다.
+
+다만 실행 가능한 Assessment를 시작하는 맥락에서는 다르다. 평가할 Rule이 0건이면 metric이 생성되지 않고 Coverage 분모가 0이 되어 `score`와 `coverage`가 모두 `null`이 된다. "모두 통과"와 구분되지 않는 결과이므로, **Assessment start는 이 조합을 거부한다.** Job과 Assessment를 만들지 않고 C에 dispatch하지 않는다.
+
+거부는 Profile이 잘못됐다는 뜻이 아니라 요청한 `(policy_profile_id@version, phase)` 조합이 실행 가능한 Rule을 갖지 않는다는 뜻이므로, 오류 message는 그 조합을 지목한다. 안정 public error code는 `EFFECTIVE_RULE_SET_EMPTY`다.
 
 가중치의 정본은 Consumer payload가 아니라 Effective Rule Set이다. Scoring은 각 Metric을 `(rule_id, rule_version)`으로 Effective Rule에 bind하고 그 Rule의 `severity`로 가중한다. Effective Rule Set 밖의 Rule을 참조하거나, `severity`·`source_type`이 pin된 Rule과 다르거나, `source_id`가 그 Rule의 검증된 Source Reference가 아니면 Score를 계산하지 않고 Validation Error를 낸다. 판정 전에 가중치를 고정한다는 규칙이 Consumer 입력을 신뢰하는 방식으로 우회되지 않게 하기 위해서다.
 

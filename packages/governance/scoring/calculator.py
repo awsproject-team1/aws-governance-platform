@@ -12,6 +12,9 @@ from collections import defaultdict
 from collections.abc import Iterable
 
 from packages.contracts.governance import (
+    SCORING_VERSION,
+    SUPPORTED_SCORING_VERSIONS,
+    ContractValidationError,
     EffectiveRuleSet,
     EvaluationStatus,
     ExecutionStatus,
@@ -20,12 +23,19 @@ from packages.contracts.governance import (
     Severity,
     SourceScoreCoverage,
     SourceType,
+    require_supported_scoring_version,
 )
 
 from ..errors import GovernanceValidationError
 
-SCORING_VERSION = "1"
-SUPPORTED_SCORING_VERSIONS = frozenset({SCORING_VERSION})
+# 어휘의 정본은 Contract 계층이다. Consumer가 Domain을 import하지 않고도 검증할 수 있어야
+# 하므로 여기서 다시 정의하지 않고 그대로 re-export한다.
+__all__ = [
+    "SCORING_VERSION",
+    "SEVERITY_WEIGHTS",
+    "SUPPORTED_SCORING_VERSIONS",
+    "calculate_source_metrics",
+]
 SEVERITY_WEIGHTS = {
     Severity.CRITICAL: 10,
     Severity.HIGH: 5,
@@ -73,8 +83,11 @@ def calculate_source_metrics(
     *,
     scoring_version: str = SCORING_VERSION,
 ) -> tuple[SourceScoreCoverage, ...]:
-    if scoring_version not in SUPPORTED_SCORING_VERSIONS:
-        raise GovernanceValidationError(f"unsupported scoring_version: {scoring_version}")
+    try:
+        require_supported_scoring_version(scoring_version)
+    except ContractValidationError as exc:
+        # Domain 경계 밖으로는 Governance 오류 타입으로 내보낸다.
+        raise GovernanceValidationError(str(exc)) from exc
     index = {rule.identity: rule for rule in effective_rule_set.rules}
 
     partitions: dict[tuple[str, SourceType], list[tuple[RuleEvaluationMetric, Rule]]] = defaultdict(

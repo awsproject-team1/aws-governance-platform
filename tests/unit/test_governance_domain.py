@@ -246,12 +246,18 @@ class ScoringTests(unittest.TestCase):
             calculate_source_metrics(duplicate, self.effective)
 
     def test_unknown_scoring_version_is_rejected(self):
+        """계산할 수 없는 version으로 조용히 다른 산식을 쓰지 않는다."""
         with self.assertRaisesRegex(GovernanceValidationError, "unsupported scoring_version"):
-            calculate_source_metrics(
-                self.evaluations,
-                self.effective,
-                scoring_version="2-unapproved",
-            )
+            calculate_source_metrics(self.evaluations, self.effective, scoring_version="2")
+
+    def test_malformed_scoring_version_is_rejected_before_the_membership_check(self):
+        """형식을 먼저 고정해야 '1'과 '01', '1'과 '1.0'이 같은 version처럼 보이지 않는다."""
+        for malformed in ("2-unapproved", "1.0", "01", "v1", ""):
+            with self.subTest(malformed):
+                with self.assertRaises(GovernanceValidationError):
+                    calculate_source_metrics(
+                        self.evaluations, self.effective, scoring_version=malformed
+                    )
 
 
 if __name__ == "__main__":
