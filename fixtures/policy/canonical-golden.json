@@ -1,0 +1,184 @@
+{
+  "markdown": {
+    "document_id": "acme-data-protection-guideline",
+    "document_version": "2026.08",
+    "detected_format": "md",
+    "parser": "markdown-loader@1",
+    "profile": "canonical-heading@1",
+    "snapshot_hash": "sha256:595f5387f246912b5e1f78e6eea1421039deb401bd81902aee6f13a0adf67888",
+    "sections": [
+      {
+        "section": "데이터-보호-운영-지침",
+        "locator": "md:line=1",
+        "content_hash": "sha256:9c2f224eccf7e05495aa5c3c144901bbb96b01460bd86dec26e4d33cb70f35fe",
+        "raw_block": "데이터 보호 운영 지침\n\n이 문서는 Ingestion이 특정 사내 문서 서식에 종속되지 않는지 확인하기 위한 Fixture다.\n`클라우드-보안-체크리스트`와 의도적으로 다른 구조, 다른 번호 체계, 다른 heading 깊이를 쓴다."
+      },
+      {
+        "section": "데이터-보호-운영-지침/제1장-저장소-운영",
+        "locator": "md:line=6",
+        "content_hash": "sha256:eae5bc1eaf84fafa971113d27fd96ac4f931ce3c580ab8881d25c4422b89ba07",
+        "raw_block": "제1장 저장소 운영"
+      },
+      {
+        "section": "데이터-보호-운영-지침/제1장-저장소-운영/1-가.-버킷-공개-설정",
+        "locator": "md:line=8",
+        "content_hash": "sha256:a508d650c02ab6413122a3ffcd8e42250fad38079e34c5668b1655c5c51b8af7",
+        "raw_block": "1-가. 버킷 공개 설정\n\n오브젝트 스토리지 버킷은 공개 접근을 차단해야 한다.\n공개가 필요한 경우 별도 승인 기록을 남긴다."
+      },
+      {
+        "section": "데이터-보호-운영-지침/제1장-저장소-운영/1-나.-저장-시-암호화",
+        "locator": "md:line=13",
+        "content_hash": "sha256:8d77460d404ff787fb788bf6d29b2d2e524fdcdf2c331a9dc22a88dc00a96d0e",
+        "raw_block": "1-나. 저장 시 암호화\n\n고객 정보를 저장하는 버킷은 저장 시 암호화를 적용한다.\n암호화 키 종류는 정보보안팀 기준을 따른다."
+      },
+      {
+        "section": "데이터-보호-운영-지침/제2장-네트워크",
+        "locator": "md:line=18",
+        "content_hash": "sha256:d6f0dfa739228561da1ee7a250e211742578b6870501f783551c74b289c4fe34",
+        "raw_block": "제2장 네트워크"
+      },
+      {
+        "section": "데이터-보호-운영-지침/제2장-네트워크/2-가.-인바운드-허용-범위",
+        "locator": "md:line=20",
+        "content_hash": "sha256:540761d565e8a6ab5c5fe5e11991f40c552581f575c9627ee56980543e976f2e",
+        "raw_block": "2-가. 인바운드 허용 범위\n\n보안 그룹은 업무에 필요한 포트만 허용한다.\n전체 대역 허용은 금지한다."
+      },
+      {
+        "section": "데이터-보호-운영-지침/부칙",
+        "locator": "md:line=25",
+        "content_hash": "sha256:9a1df1a37b10e7237f719f9a37634529f39134cdef14460188f0b23d089cbdbf",
+        "raw_block": "부칙\n\n이 지침은 공표한 날부터 시행한다."
+      }
+    ]
+  },
+  "html": {
+    "document_id": "acme-access-control-wiki",
+    "document_version": "2026.08",
+    "detected_format": "html",
+    "parser": "html-dom-loader@1",
+    "profile": "canonical-heading@1",
+    "snapshot_hash": "sha256:1c0cfdcdb893a2b576b874742306648d7ca3681cb0de6b3edc2a68a79f2e4f41",
+    "sections": [
+      {
+        "section": "클라우드-접근-통제-지침",
+        "locator": "html:dom=html[1]>body[1]>div[1]>h1[1]",
+        "content_hash": "sha256:3fee4de6417a3d3f663412460954f489d2e7831a2d67aab1c431746c6c4940b3",
+        "raw_block": "클라우드 접근 통제 지침\n\n이 문서는 사내 위키 Export를 Ingestion이 그대로 다룰 수 있는지 확인하는 Fixture다."
+      },
+      {
+        "section": "클라우드-접근-통제-지침/공통",
+        "locator": "html:dom=html[1]>body[1]>div[1]>h2[1]",
+        "content_hash": "sha256:8bfee67f68e8a2d20a7053735a6e9f1a2359e540dc538e52d04b5f33a31f86d9",
+        "raw_block": "공통\n\n모든 계정은 최소 권한 원칙을 따른다. 근거는\n최소 권한 원칙 (https://wiki.example.com/policy/least-privilege)을 참고한다.\n\n- 공용 계정을 만들지 않는다.\n\n  - 예외는 정보보안팀 승인 기록이 있어야 한다.\n\n  - 승인 기록은 1년간 보관한다.\n\n- 장기 Access Key 대신 임시 자격증명을 사용한다."
+      },
+      {
+        "section": "클라우드-접근-통제-지침/책임-매트릭스",
+        "locator": "html:dom=html[1]>body[1]>div[1]>h2[2]",
+        "content_hash": "sha256:c6a0243cc83c2eded826246ccb9cbd83c96d55b6b6be6e1c56ba269e987951af",
+        "raw_block": "책임 매트릭스\n\n| 구분 | 정보보안팀 | 서비스팀 |\n| 접근 권한 | 정책 수립 | 요청 및 회수 |\n|  | 분기 1회 공동 점검 |  |"
+      },
+      {
+        "section": "클라우드-접근-통제-지침/공통~2",
+        "locator": "html:dom=html[1]>body[1]>div[1]>h2[3]",
+        "content_hash": "sha256:70c4003712ea94c90f674adfdf645f0bb7964ede9fde8d673e75736f53ae3e5b",
+        "raw_block": "공통\n\n같은 제목이 문서 안에서 반복되는 경우를 의도적으로 포함한다.\n\n문의: 여기 대신 정보보안팀 메일을 사용한다."
+      }
+    ]
+  },
+  "docx": {
+    "document_id": "acme-access-regulation",
+    "document_version": "2026.08",
+    "detected_format": "docx",
+    "parser": "docx-ooxml-loader@1",
+    "profile": "canonical-heading@1",
+    "snapshot_hash": "sha256:b50dd3ad0e94a90a6ece86c50d8e144e4295ca06b7237a2fb61335d4cb1c25e3",
+    "sections": [
+      {
+        "section": "접근-통제-규정",
+        "locator": "docx:body=1",
+        "content_hash": "sha256:dc928a6cc119640c1663fe8a563036f8b0a9081f4fe88aa9f29cac8673620a34",
+        "raw_block": "접근 통제 규정\n\n이 규정은 계정과 권한의 최소 기준을 정한다."
+      },
+      {
+        "section": "접근-통제-규정/제1조-계정-관리",
+        "locator": "docx:body=3",
+        "content_hash": "sha256:221593a1eeca7c1a8b97b5f827294a746894c90f8de6234c828cacee5fad22b5",
+        "raw_block": "제1조 계정 관리\n\n- 공용 계정을 사용하지 않는다.\n\n  - 불가피한 경우 승인 기록을 남긴다."
+      },
+      {
+        "section": "접근-통제-규정/제2조-권한-검토",
+        "locator": "docx:body=6",
+        "content_hash": "sha256:a177301403eeaacfda6284a80b49fcb4e5b272c578724a7a464dc2d1b3c61ab3",
+        "raw_block": "제2조 권한 검토\n\n| 구분 | 주기 | 책임 |\n| 정기 검토 | 분기 1회 | 정보보안팀 |\n|  | 상시 점검 |  |"
+      },
+      {
+        "section": "접근-통제-규정/제1조-계정-관리~2",
+        "locator": "docx:body=8",
+        "content_hash": "sha256:29bb73548cde42005f14cb9dee42acb5d9bac7e18bc41ddb5241ce9875b5bf52",
+        "raw_block": "제1조 계정 관리\n\n같은 제목이 반복되는 경우를 포함한다."
+      }
+    ]
+  },
+  "pdf": {
+    "document_id": "acme-access-policy",
+    "document_version": "2026.08",
+    "detected_format": "pdf",
+    "parser": "pdf-triage@2",
+    "profile": "canonical-heading@1",
+    "snapshot_hash": "sha256:71423188a31009029bd82e8791c2c9e3bd001dbced9f8efc3c6ae9a0eabc05c4",
+    "sections": [
+      {
+        "section": "access-control-policy",
+        "locator": "pdf:page=1/block=1",
+        "content_hash": "sha256:6a667a81a03501a8c9fa1e8a460eda8232461cdcdc3ce97970fb83d1d695c6c5",
+        "raw_block": "Access Control Policy\n\nThis policy defines the minimum access requirements."
+      },
+      {
+        "section": "access-control-policy/account-management",
+        "locator": "pdf:page=1/block=3",
+        "content_hash": "sha256:f0d099049c52a38edd1bdff1eb89795943195182b7f9031d4b9d19a6d2cda218",
+        "raw_block": "Account Management\n\nShared accounts are prohibited.\nExceptions require a recorded approval."
+      },
+      {
+        "section": "access-control-policy/periodic-review",
+        "locator": "pdf:page=2/block=1",
+        "content_hash": "sha256:240d148aa01ad0c17c77fa19bdd6c5805919ed75ed7554b29a6a81197862adaf",
+        "raw_block": "Periodic Review\n\nAccess rights are reviewed every quarter."
+      }
+    ]
+  },
+  "xlsx": {
+    "document_id": "acme-control-matrix",
+    "document_version": "2026.08",
+    "detected_format": "xlsx",
+    "parser": "xlsx-control-matrix@1",
+    "profile": "xlsx-control-matrix@1",
+    "snapshot_hash": "sha256:4dce6c12ce434f755d693612ec5640da800697ecb85fb9fcc76e8d29418c1312",
+    "sections": [
+      {
+        "section": "controls/row-3",
+        "locator": "xlsx:sheet=Controls/range=A3:D3",
+        "content_hash": "sha256:ac528fb0588a63a19cd9e4072cbf96eb8a434a15b3e6760660c89a1a2570b2bb",
+        "raw_block": "| Control ID | Requirement | Owner | Status |\n| IAM-001 | Shared accounts are prohibited. | Security | [formula:=UPPER(\"active\"); cached:ACTIVE] |"
+      },
+      {
+        "section": "controls/row-4",
+        "locator": "xlsx:sheet=Controls/range=A4:D4",
+        "content_hash": "sha256:206fa08e5b26430e129b16869a34c4289d0372fe01a4b6f9abe2e671a476fd96",
+        "raw_block": "| Control ID | Requirement | Owner | Status |\n| IAM-002 | Access rights are reviewed quarterly. | Governance | ACTIVE |"
+      },
+      {
+        "section": "controls/row-5",
+        "locator": "xlsx:sheet=Controls/range=A5:D5",
+        "content_hash": "sha256:4c13a1433ad537d07991f36c9ce7a202de3cd4d3b70fd19d88dc4fc72dce5897",
+        "raw_block": "| Control ID | Requirement | Owner | Status |\n| NET-001 | Ingress is restricted to approved ranges. |  | ACTIVE |"
+      },
+      {
+        "section": "archive/row-2",
+        "locator": "xlsx:sheet=Archive/range=A2:D2",
+        "content_hash": "sha256:49cac5c381e735d2bc84e467ef7a8354e278ef7312e96c4dc34f67415490fa7d",
+        "raw_block": "| Control ID | Requirement | Owner | Status |\n| OLD-001 | Legacy control kept for audit. | Archive Team | RETIRED |"
+      }
+    ]
+  }
+}
