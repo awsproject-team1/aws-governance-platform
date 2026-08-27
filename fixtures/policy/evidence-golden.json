@@ -1,0 +1,55 @@
+{
+  "evidence": [
+    {
+      "evidence_id": "evidence-aws-s3-8",
+      "source_reference": {
+        "document_id": "aws-fsbp-1-0-0",
+        "document_version": "2026.08.25",
+        "section": "S3.8",
+        "content_hash": "sha256:1f83e123d34218b244010893550a8bb2851413fbefca9ed5ea9347ceb901581a"
+      },
+      "locator": "fixture://aws-fsbp-1-0-0/S3.8",
+      "excerpt": "S3 범용 버킷에는 버킷 수준 Block Public Access 설정이 필요하다."
+    }
+  ],
+  "question": {
+    "question": "S3 Block Public Access 정책 근거는 무엇인가?",
+    "allowed_source_ids": ["aws-fsbp-1-0-0"]
+  },
+  "answer": {
+    "answer": "등록된 AWS FSBP S3.8 근거는 버킷 수준 Block Public Access 설정을 요구한다.",
+    "evidence": [
+      {
+        "evidence_id": "evidence-aws-s3-8",
+        "source_reference": {
+          "document_id": "aws-fsbp-1-0-0",
+          "document_version": "2026.08.25",
+          "section": "S3.8",
+          "content_hash": "sha256:1f83e123d34218b244010893550a8bb2851413fbefca9ed5ea9347ceb901581a"
+        },
+        "locator": "fixture://aws-fsbp-1-0-0/S3.8",
+        "excerpt": "S3 범용 버킷에는 버킷 수준 Block Public Access 설정이 필요하다."
+      }
+    ],
+    "limitations": ["실제 Resource의 PASS/FAIL은 이 답변에서 판정하지 않는다."]
+  },
+  "external_allowlist": [
+    {
+      "source_id": "aws-official-docs",
+      "identifier_prefix": "https://docs.aws.amazon.com/"
+    }
+  ],
+  "external_evidence": [
+    {
+      "evidence_id": "external-aws-s3-controls",
+      "source_reference": {
+        "document_id": "aws-official-docs",
+        "document_version": "fixture-2026-08-26",
+        "section": "s3-controls",
+        "content_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "locator": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html",
+      "excerpt": "Fixture excerpt representing an allowed official evidence result."
+    }
+  ]
+}

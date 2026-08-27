@@ -167,6 +167,20 @@ cloudtrail.trail.enabled
 
 Control Key는 향후 Control Registry가 소유한다. 위 값은 Shared Contract와 Registry review 전까지 실제 key로 예약되지 않는다. 전체 조합 규칙, 약어 목록, rename/version 정책은 아직 확정되지 않았다.
 
+## Source 결과 표시 이름
+
+내부 산식의 Source별 결과는 다음 표시 이름을 사용한다.
+
+- `FSBP 기반 Governance Score`
+- `CIS 기반 Governance Score`
+- `AWS Resource Tagging Score`
+- `Customer Policy Score`
+- `Source별 Evaluation Coverage`
+- `ISMS-P Mapping Coverage`
+- `ISMS-P Evidence Readiness`
+
+공식 산식과 동일한 구현이 아니므로 `AWS Security Hub Score`, `공식 FSBP Score`, `공식 CIS Score`, `ISMS-P Compliance Score`, `ISMS-P 인증 점수`는 사용하지 않는다. Core/Foundational/Hygiene/Control Tower Profile 이름은 개념적 설명이며 production Profile ID와 이름은 계속 Open Decision이다.
+
 ## Domain ID와 API Field
 
 Domain ID와 API Field Naming은 [CONTRACTS.md](CONTRACTS.md)와 `packages/contracts/`를 따른다. 문서 예시에는 `job-001`, `asm-001`, `ar-001`, `fd-001`, `rem-001`, `dep-001`이 사용되지만 생성 알고리즘과 prefix 강제 여부는 확정되지 않았다.

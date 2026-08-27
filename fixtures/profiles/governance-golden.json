@@ -1,0 +1,52 @@
+{
+  "profile": {
+    "policy_profile_id": "profile-governance-golden",
+    "policy_profile_version": 1,
+    "rule_pins": [
+      {
+        "rule_id": "CUSTOMER-S3-PROC-001",
+        "version": 1
+      },
+      {
+        "rule_id": "GLOBAL-S3-PAB-001",
+        "version": 1
+      },
+      {
+        "rule_id": "CUSTOMER-S3-PAB-003",
+        "version": 2
+      },
+      {
+        "rule_id": "CUSTOMER-S3-ENC-001",
+        "version": 1
+      }
+    ]
+  },
+  "admin_settings": {
+    "admin_settings_snapshot_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "expected_rule_ids": {
+    "INITIAL": [
+      "CUSTOMER-S3-ENC-001@1",
+      "GLOBAL-S3-PAB-001@1"
+    ],
+    "PRE_DEPLOY": [
+      "CUSTOMER-S3-ENC-001@1",
+      "CUSTOMER-S3-PAB-003@2",
+      "GLOBAL-S3-PAB-001@1"
+    ],
+    "POST_DEPLOY": [
+      "CUSTOMER-S3-ENC-001@1",
+      "CUSTOMER-S3-PAB-003@2",
+      "GLOBAL-S3-PAB-001@1"
+    ],
+    "MANUAL_REVIEW": [
+      "CUSTOMER-S3-PROC-001@1"
+    ]
+  },
+  "expected_rule_set_hash": {
+    "INITIAL": "sha256:6fa5b61da9df4cd976f07c05c493934dd22e6656cf22a6a3ef41591490957b8f",
+    "PRE_DEPLOY": "sha256:28f7498d352f7770766e7fc07f19219b594f0eb91a432339e344583782a00689",
+    "POST_DEPLOY": "sha256:8a8dae942135dedbf834e2a955f57a116bf75e3d0b3506f0d3d6e2ec0c532167",
+    "MANUAL_REVIEW": "sha256:fd68f87d5c883c733b2386307daf428b50f943e2ef135fd3c2dfa963a7830213"
+  }
+}

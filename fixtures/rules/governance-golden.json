@@ -1,0 +1,184 @@
+{
+  "_note": {
+    "purpose": "Governance Domain의 결정론적 동작을 고정하는 unit/contract test fixture다. Slice 정의 artifact나 운영 Registry의 정본이 아니다.",
+    "all_rules_are_active_here": "이 파일의 Rule 4건은 모두 status=ACTIVE다. Registry/Profile/Phase filter/Scoring 경로가 ACTIVE Rule을 요구하기 때문이며, 실제 승인 상태를 뜻하지 않는다. 특히 GLOBAL-S3-PAB-001은 README와 ADR-0002가 '아직 ACTIVE로 취급하지 않는다'고 명시한 Rule이다. 공식 snapshot을 pin하는 새 version과 Human Approval 전에는 운영 Registry에 ACTIVE로 등록하지 않는다. 이 파일을 복사해 쓸 때 그 상태까지 함께 가져가지 않도록 주의한다.",
+    "rule_count": "Rule 4건은 같은 Control의 다중 Source 독립 평가와 Phase filter 변별을 검증하기 위한 것이며, Issue #14가 말하는 '두 번째 Resource나 Rule 도입'과는 다른 층위다."
+  },
+  "policy_sources": [
+    {
+      "source_id": "aws-fsbp-1-0-0",
+      "source_type": "GLOBAL",
+      "source_version": "2026.08.25"
+    },
+    {
+      "source_id": "cloud-infra-security-checklist",
+      "source_type": "CUSTOMER",
+      "source_version": "2026.08"
+    }
+  ],
+  "controls": [
+    {
+      "control_key": "s3.encryption.at_rest"
+    },
+    {
+      "control_key": "s3.public_access.approval_record"
+    },
+    {
+      "control_key": "s3.public_access_block.enabled"
+    }
+  ],
+  "mappings": [
+    {
+      "source_reference": {
+        "document_id": "aws-fsbp-1-0-0",
+        "document_version": "2026.08.25",
+        "section": "S3.8",
+        "content_hash": "sha256:1f83e123d34218b244010893550a8bb2851413fbefca9ed5ea9347ceb901581a"
+      },
+      "resource_type": "aws_s3_bucket",
+      "control_key": "s3.public_access_block.enabled"
+    },
+    {
+      "source_reference": {
+        "document_id": "cloud-infra-security-checklist",
+        "document_version": "2026.08",
+        "section": "5.1-B",
+        "content_hash": "sha256:8e252ed8f701d2d7c7d9ded89feb11a0855e1c09836ef2fb00372b1344f5e729"
+      },
+      "resource_type": "aws_s3_bucket",
+      "control_key": "s3.public_access_block.enabled"
+    },
+    {
+      "source_reference": {
+        "document_id": "cloud-infra-security-checklist",
+        "document_version": "2026.08",
+        "section": "5.1-A",
+        "content_hash": "sha256:36765bc938b6d718db526fae053c294e03497879e7aa5f143a315265a6011029"
+      },
+      "resource_type": "aws_s3_bucket",
+      "control_key": "s3.public_access.approval_record"
+    },
+    {
+      "source_reference": {
+        "document_id": "cloud-infra-security-checklist",
+        "document_version": "2026.08",
+        "section": "5.1-F",
+        "content_hash": "sha256:f6cfb65c7777ed76a4b1864fe2449d9e8442251ea6acf6bf944772b4c01f19d0"
+      },
+      "resource_type": "aws_s3_bucket",
+      "control_key": "s3.encryption.at_rest"
+    }
+  ],
+  "rules": [
+    {
+      "rule_id": "CUSTOMER-S3-ENC-001",
+      "version": 1,
+      "status": "ACTIVE",
+      "source_type": "CUSTOMER",
+      "source_references": [
+        {
+          "document_id": "cloud-infra-security-checklist",
+          "document_version": "2026.08",
+          "section": "5.1-F",
+          "content_hash": "sha256:f6cfb65c7777ed76a4b1864fe2449d9e8442251ea6acf6bf944772b4c01f19d0"
+        }
+      ],
+      "resource_type": "aws_s3_bucket",
+      "control_key": "s3.encryption.at_rest",
+      "evaluation_type": "IAC",
+      "severity": "MEDIUM",
+      "requirement": "S3 버킷은 저장 시 서버 측 암호화를 적용해야 한다.",
+      "remediation_type": "TERRAFORM_PATCH"
+    },
+    {
+      "rule_id": "CUSTOMER-S3-PROC-001",
+      "version": 1,
+      "status": "ACTIVE",
+      "source_type": "CUSTOMER",
+      "source_references": [
+        {
+          "document_id": "cloud-infra-security-checklist",
+          "document_version": "2026.08",
+          "section": "5.1-A",
+          "content_hash": "sha256:36765bc938b6d718db526fae053c294e03497879e7aa5f143a315265a6011029"
+        }
+      ],
+      "resource_type": "aws_s3_bucket",
+      "control_key": "s3.public_access.approval_record",
+      "evaluation_type": "MANUAL",
+      "severity": "LOW",
+      "requirement": "퍼블릭 스토리지 운영에는 승인 근거가 존재해야 한다.",
+      "remediation_type": "MANUAL"
+    },
+    {
+      "rule_id": "CUSTOMER-S3-PAB-003",
+      "version": 2,
+      "status": "ACTIVE",
+      "source_type": "CUSTOMER",
+      "source_references": [
+        {
+          "document_id": "cloud-infra-security-checklist",
+          "document_version": "2026.08",
+          "section": "5.1-B",
+          "content_hash": "sha256:8e252ed8f701d2d7c7d9ded89feb11a0855e1c09836ef2fb00372b1344f5e729"
+        }
+      ],
+      "resource_type": "aws_s3_bucket",
+      "control_key": "s3.public_access_block.enabled",
+      "evaluation_type": "AWS",
+      "severity": "HIGH",
+      "requirement": "퍼블릭 스토리지를 제외한 모든 버킷에 Block Public Access를 적용해야 한다.",
+      "remediation_type": "TERRAFORM_PATCH"
+    },
+    {
+      "rule_id": "GLOBAL-S3-PAB-001",
+      "version": 1,
+      "status": "ACTIVE",
+      "source_type": "GLOBAL",
+      "source_references": [
+        {
+          "document_id": "aws-fsbp-1-0-0",
+          "document_version": "2026.08.25",
+          "section": "S3.8",
+          "content_hash": "sha256:1f83e123d34218b244010893550a8bb2851413fbefca9ed5ea9347ceb901581a"
+        }
+      ],
+      "resource_type": "aws_s3_bucket",
+      "control_key": "s3.public_access_block.enabled",
+      "evaluation_type": "IAC",
+      "severity": "HIGH",
+      "requirement": "S3 범용 버킷은 네 가지 버킷 수준 Block Public Access 설정을 모두 적용해야 한다.",
+      "remediation_type": "TERRAFORM_PATCH"
+    }
+  ],
+  "approvals": [
+    {
+      "rule_id": "CUSTOMER-S3-ENC-001",
+      "version": 1,
+      "rule_content_hash": "sha256:fb1a38bcf41c7afda4406634361f7532b6fdf2bac4150426721dc06f56e9c64d",
+      "approved_by": "fixture-admin",
+      "approved_at": "2026-08-25T00:00:00Z"
+    },
+    {
+      "rule_id": "CUSTOMER-S3-PROC-001",
+      "version": 1,
+      "rule_content_hash": "sha256:c10fd7ae3bcc477ee251ed366a3789109d76030c25c31727bf7b130488f0ba3e",
+      "approved_by": "fixture-admin",
+      "approved_at": "2026-08-25T00:00:00Z"
+    },
+    {
+      "rule_id": "CUSTOMER-S3-PAB-003",
+      "version": 2,
+      "rule_content_hash": "sha256:91e0aa0cb40238c03c3f6cedff574533dd71a409fb73a929bd5b2513a7962b8e",
+      "approved_by": "fixture-admin",
+      "approved_at": "2026-08-25T00:00:00Z"
+    },
+    {
+      "rule_id": "GLOBAL-S3-PAB-001",
+      "version": 1,
+      "rule_content_hash": "sha256:6bf6e247bec81a43d4ce8e87a72b10ad7f5bbdd6424ece0a90788310254c2221",
+      "approved_by": "fixture-admin",
+      "approved_at": "2026-08-25T00:00:00Z"
+    }
+  ]
+}

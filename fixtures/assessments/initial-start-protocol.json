@@ -1,0 +1,74 @@
+{
+  "public_start_request": {
+    "phase": "INITIAL",
+    "repository_id": "repo-001",
+    "policy_profile_id": "profile-001",
+    "policy_profile_version": 1
+  },
+  "assessment_start_command": {
+    "job_id": "job-001",
+    "phase": "INITIAL",
+    "repository_id": "repo-001",
+    "effective_rule_set": {
+      "policy_profile_id": "profile-001",
+      "policy_profile_version": 1,
+      "phase": "INITIAL",
+      "admin_settings_snapshot_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "rules": [
+        {
+          "rule_id": "GLOBAL-S3-PAB-001",
+          "version": 1,
+          "status": "ACTIVE",
+          "source_type": "GLOBAL",
+          "source_references": [
+            {
+              "document_id": "aws-fsbp-1-0-0",
+              "document_version": "2026.08.25",
+              "section": "S3.8",
+              "content_hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            }
+          ],
+          "resource_type": "aws_s3_bucket",
+          "control_key": "s3.public_access_block.enabled",
+          "evaluation_type": "IAC",
+          "severity": "HIGH",
+          "requirement": "The four S3 public access block settings must be enabled.",
+          "remediation_type": "TERRAFORM_PATCH"
+        }
+      ],
+      "rule_set_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    },
+    "scoring_version": "1"
+  },
+  "start_acknowledgement": {
+    "job_id": "job-001",
+    "assessment_id": "assessment-001",
+    "status": "ACCEPTED"
+  },
+  "linkage_confirmation": {
+    "job_id": "job-001",
+    "assessment_id": "assessment-001",
+    "revision": 1,
+    "status": "RUNNING",
+    "current_step": "LOAD_IAC"
+  },
+  "progress_update": {
+    "update_id": "update-001",
+    "job_id": "job-001",
+    "assessment_id": "assessment-001",
+    "expected_revision": 1,
+    "status": "RUNNING",
+    "current_step": "ASSESS",
+    "error": null
+  },
+  "progress_acknowledgement": {
+    "job_id": "job-001",
+    "update_id": "update-001",
+    "revision": 2
+  },
+  "idempotency": {
+    "start": "C reuses the stored assessment_id for an identical job_id command and rejects a changed command for that job_id.",
+    "linkage_confirmation": "C treats a repeated confirmation for the stored job_id and assessment_id pair as no-op success and activates work exactly once.",
+    "progress": "A returns the original progress acknowledgement for an exact duplicate job_id and update_id before evaluating its now-stale expected_revision. Reusing update_id with different payload is a conflict."
+  }
+}

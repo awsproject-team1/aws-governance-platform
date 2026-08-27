@@ -1,0 +1,65 @@
+{
+  "snapshot_kind": "official-reference-metadata",
+  "snapshot_limitations": [
+    "This freezes a minimal metadata projection and official references, not a verbatim archive of the AWS documentation page.",
+    "Only S3.8 is selected for the current Rule Pack; the other observed FSBP S3 controls are explicitly excluded until their Rule evidence and B-to-C evaluator binding are reviewed."
+  ],
+  "observed_control_ids": [
+    "S3.1",
+    "S3.2",
+    "S3.3",
+    "S3.5",
+    "S3.6",
+    "S3.8",
+    "S3.9",
+    "S3.12",
+    "S3.13",
+    "S3.19",
+    "S3.24",
+    "S3.25"
+  ],
+  "source_snapshot": {
+    "source_id": "aws-fsbp-1-0-0",
+    "source_version": "1.0.0+2026-08-26.s3-v1",
+    "framework_version": "1.0.0",
+    "snapshot_date": "2026-08-26",
+    "collected_at": "2026-08-26T00:00:00Z",
+    "official_reference_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/fsbp-standard.html",
+    "canonical_content_hash": "sha256:448f308e1c1a69dd173091e1ffdd64118f893d2d61e1f2bf9b2bdbdf774e05b2",
+    "selected_control_ids": ["S3.8"],
+    "excluded_controls": [
+      {"control_id": "S3.1", "reason": "No approved Rule and Area C evaluator binding in the current S3 pack."},
+      {"control_id": "S3.2", "reason": "No approved Rule and Area C evaluator binding in the current S3 pack."},
+      {"control_id": "S3.3", "reason": "No approved Rule and Area C evaluator binding in the current S3 pack."},
+      {"control_id": "S3.5", "reason": "No approved Rule and Area C evaluator binding in the current S3 pack."},
+      {"control_id": "S3.6", "reason": "No approved Rule and Area C evaluator binding in the current S3 pack."},
+      {"control_id": "S3.9", "reason": "No approved Rule and Area C evaluator binding in the current S3 pack."},
+      {"control_id": "S3.12", "reason": "No approved Rule and Area C evaluator binding in the current S3 pack."},
+      {"control_id": "S3.13", "reason": "No approved Rule and Area C evaluator binding in the current S3 pack."},
+      {"control_id": "S3.19", "reason": "Different AWS resource type; no approved Rule and Area C evaluator binding in the current S3 pack."},
+      {"control_id": "S3.24", "reason": "Different AWS resource type; no approved Rule and Area C evaluator binding in the current S3 pack."},
+      {"control_id": "S3.25", "reason": "Different AWS resource type; no approved Rule and Area C evaluator binding in the current S3 pack."}
+    ],
+    "mapping_version": "s3-1",
+    "control_set_hash": "sha256:f0a77a1e03815966a91c1b794017c76b34de11bb09eef81345a6f49138b6cbe0"
+  },
+  "selected_control_evidence": [
+    {
+      "control_id": "S3.8",
+      "title": "S3 general purpose buckets should block public access",
+      "official_reference_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/s3-controls.html#s3-8",
+      "official_resource_type": "AWS::S3::Bucket",
+      "contract_resource_type": "aws_s3_bucket",
+      "severity": "HIGH",
+      "evaluation_type": "AWS",
+      "requirement": "S3 범용 버킷은 네 가지 버킷 수준 Block Public Access 설정을 모두 적용해야 한다.",
+      "required_observations": [
+        "ignorePublicAcls",
+        "blockPublicPolicy",
+        "blockPublicAcls",
+        "restrictPublicBuckets"
+      ],
+      "content_hash": "sha256:304a3934022077887457717c24d3ed7a27ef1e09a6b3564d9c0a60cfbe482463"
+    }
+  ]
+}
