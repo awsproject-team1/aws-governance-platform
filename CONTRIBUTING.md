@@ -32,7 +32,7 @@ dev → Pull Request → Required CI / Review → Squash Merge → main
 - Parent 전용 branch나 PR은 만들지 않습니다.
 - Sub-issue는 Review와 Merge가 가능한 크기로 유지하되 억지로 지나치게 작게 나누지 않습니다.
 - 개별 Sub-issue의 구현과 PR은 해당 Sub-issue의 Scope, Acceptance Criteria, Test / Validation을 완료 기준으로 사용합니다.
-- Sub-issue만으로 범위를 판단할 수 없거나 Parent의 Scope·의존 관계가 변경된 경우에만 구현 중 Parent Issue를 다시 확인합니다.
+- Sub-issue 착수 시 Parent Issue의 Goal, Scope(제외 범위 포함), 직접 의존 관계를 한 번 확인합니다. 구현 중에는 Sub-issue만으로 범위를 판단할 수 없거나 Parent 변경 알림을 받은 경우에만 Parent 전체를 다시 확인합니다.
 - Parent Issue의 전체 Acceptance Criteria와 주요 산출물은 모든 소속 Sub-issue가 완료된 뒤 Parent를 종료하는 단계에서 종합적으로 검증합니다.
 - 다른 Owner 영역이나 공통 Contract에 영향을 주면 구현 전에 관련 Owner와 합의합니다.
 - Sub-issue 구현과 로컬 검증을 마친 뒤 Platform Repository PR을 `dev` 대상으로 생성합니다. Required CI는 PR 이후 Gate로 수행합니다.
@@ -118,13 +118,13 @@ PR에는 다음을 포함합니다.
 - Security / Secret 확인
 - 다른 Owner 확인 필요 여부
 
-Merge 조건은 해당 PR의 Required CI 통과와 다른 팀원 최소 1명 승인입니다. CI 실패 상태에서는 Merge하지 않습니다. Squash Merge를 기본으로 하며 Merge 후 더 이상 필요 없는 feature branch는 삭제할 수 있습니다.
+목표 협업 정책상 Merge 조건은 해당 PR의 Required CI 통과와 다른 팀원 최소 1명 승인입니다. CI 실패 상태에서는 Merge하지 않고 Squash Merge만 사용합니다. 실제 강제 조건과의 차이는 아래 `GitHub Repository 보호 규칙`의 blocker를 따릅니다. Merge 후 더 이상 필요 없는 feature branch는 삭제할 수 있습니다.
 
 일반 PR은 `dev`를 대상으로 하므로 Related Issue에는 `Refs #번호`를 사용하고, Merge 후 해당 Sub-issue를 종료합니다. GitHub의 closing keyword는 기본 branch 대상 PR에서만 동작하므로 `Closes`는 실제 자동 종료 조건을 충족할 때만 사용합니다.
 
 ## GitHub Repository 보호 규칙
 
-`main`과 `dev`에는 GitHub Ruleset을 적용해 문서의 협업 규칙을 실제로 강제합니다.
+다음은 `main`과 `dev`에 적용할 목표 GitHub Ruleset입니다.
 
 - Pull Request와 다른 팀원 최소 1명의 승인을 요구합니다.
 - 최신 Push에 대한 승인과 Review 대화 해결을 요구합니다.
@@ -133,19 +133,23 @@ Merge 조건은 해당 PR의 Required CI 통과와 다른 팀원 최소 1명 승
 - 관리자 Bypass는 긴급 복구에 필요한 최소 인원으로 제한합니다.
 - 일반 `main` 통합 PR은 `dev`에서만 생성합니다.
 
-Path Filter로 실행되지 않을 수 있는 Workflow를 그대로 Required Check로 등록하지 않습니다. 모든 PR에서 완료 상태를 보고하는 공통 PR Gate를 두고 변경 영역별 검사를 연결합니다. 목표 규칙은 이 문서가 정본이며, 실제 적용 상태와 Bypass 대상은 GitHub Repository Settings가 정본입니다.
+Path Filter로 실행되지 않을 수 있는 Workflow를 그대로 Required Check로 등록하지 않습니다. 모든 PR에서 완료 상태를 보고하는 공통 PR Gate를 두고 변경 영역별 검사를 연결하는 것이 목표입니다. 목표 규칙은 이 문서가 정본이며, 실제 강제 상태와 Bypass 대상은 GitHub Repository Settings가 정본입니다.
+
+> **TODO / Merge protection blocker:** 현재 활성 Ruleset에는 Required Status Check가 등록되어 있지 않고, 모든 PR에서 항상 완료 상태를 보고하는 공통 PR Gate Workflow도 없습니다. 따라서 Required CI 통과는 현재 절차상 Merge 조건일 뿐 GitHub이 기술적으로 강제하지 않습니다. 공통 PR Gate를 구현하고 `main`과 `dev` Ruleset의 Required Status Check로 등록하기 전에는 이 차이를 해소한 것으로 간주하지 않습니다.
+>
+> 현재 Ruleset은 2명 승인을 요구하고 Repository Settings는 Merge Commit과 Rebase Merge도 허용하여, 이 문서의 목표인 최소 1명 승인과 Squash Merge와 다릅니다. 설정이 목표 정책에 맞게 조정될 때까지 실제 Merge 가능 조건은 GitHub Repository Settings를 따르고, PR 운영에서는 Squash Merge만 선택합니다.
 
 ## Test와 CI
 
-GitHub Actions는 Path Filter로 변경 영역에 필요한 검사를 자동 선택하는 것을 원칙으로 합니다.
+GitHub Actions는 Path Filter로 변경 영역에 필요한 검사를 자동 선택하는 것을 원칙으로 합니다. 현재 실행 가능한 Workflow는 모든 PR의 Secret Scan과 Python 변경 경로의 Python Checks입니다.
 
 - 모든 PR: Secret Scan
 - Python 변경: Unit Test, Contract Test, Ruff Lint/Format
-- Terraform 변경: `terraform fmt -check`, `terraform validate`, TFLint, Checkov
-- Frontend 변경: Frontend Test, Build
+- Terraform 변경(목표, 아직 Workflow 미구현): `terraform fmt -check`, `terraform validate`, TFLint, Checkov
+- Frontend 변경(목표, 아직 Workflow 미구현): Frontend Test, Build
 - Integration/E2E: 모든 PR에 강제하지 않고 주요 Domain 연결, 주요 Merge, Demo/Release 전에 수행
 
-테스트 커버리지 수치는 MVP의 일률적 Gate로 두지 않으며 핵심 기능과 Contract Test의 존재를 우선합니다. 구체 명령은 기술 Bootstrap과 CI 구현 시 확정합니다.
+현재 Python Checks는 `python -m ruff check .`, `python -m ruff format --check .`, `tests/unit`의 `unittest` discovery, `tests/contract`의 `unittest` discovery를 실행합니다. 테스트 커버리지 수치는 MVP의 일률적 Gate로 두지 않으며 핵심 기능과 Contract Test의 존재를 우선합니다. 아직 manifest나 Workflow가 없는 영역의 구체 명령은 해당 기술 Bootstrap과 CI 구현 시 확정합니다.
 
 ## 문서와 Contract
 

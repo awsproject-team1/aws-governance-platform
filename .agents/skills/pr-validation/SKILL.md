@@ -19,7 +19,7 @@ description: Review a local change or PR candidate in this repository, run only 
 
 ## Review
 
-- For a Sub-issue PR, check that Sub-issue's Scope, Acceptance Criteria, and Test / Validation rather than the full Parent completion criteria. Re-open the Parent earlier only when the Sub-issue is insufficient or the Parent Scope or dependencies changed.
+- For a Sub-issue PR, confirm that the implementer checked the Parent's Goal, Scope (including exclusions), and direct dependencies at Sub-issue start. Review against the Sub-issue's Scope, Acceptance Criteria, and Test / Validation rather than the full Parent completion criteria. Re-open the full Parent earlier only when the Sub-issue is insufficient or a Parent change is reported.
 - Check the Parent's full Acceptance Criteria and deliverables only at Parent closure after all of its Sub-issues are complete.
 - Check unintended changes, ownership boundaries, backward compatibility, required fixtures/tests, and documentation synchronization.
 - Confirm the PR path, base/head, related Issue, validation evidence, and Architecture/Contract/Security impact against `CONTRIBUTING.md`.

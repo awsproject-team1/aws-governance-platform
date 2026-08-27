@@ -9,7 +9,7 @@ description: Implement a scoped issue or development request in this repository 
 
 - Follow the root `AGENTS.md` minimal-context procedure and Source of Truth router.
 - Inspect the task or Issue and existing user changes, then locate affected code, nearby tests, and fixtures with `rg` or `rg --files`.
-- For a Sub-issue, use its Scope, Acceptance Criteria, and Test / Validation as the implementation boundary. Re-open the Parent Issue only when the Sub-issue is insufficient or the Parent Scope or dependencies changed; do not revalidate the full Parent for each Sub-issue.
+- When starting a Sub-issue, read the Parent Issue's Goal, Scope (including exclusions), and direct dependencies once. Use the Sub-issue's Scope, Acceptance Criteria, and Test / Validation as the implementation boundary. During implementation, re-open the full Parent only when the Sub-issue is insufficient or a Parent change is reported; revalidate the full Parent at Parent closure.
 
 ## Implement
 

@@ -9,7 +9,7 @@
 3. `rg`와 `rg --files`로 영향받는 코드·Fixture·Test를 좁혀 읽는다.
 4. 첫 정본과 관련 코드만으로 판단할 수 없을 때만 두 번째 문서를 읽는다.
 5. 같은 Codex 실행에서 이미 읽은 안정적인 문서는 실제로 변경됐거나 최신 재확인이 필요하지 않으면 다시 읽지 않는다. `git status`, `git diff`, 테스트 결과처럼 변하는 정보는 필요할 때 재확인한다.
-6. 이미 생성된 Sub-issue를 구현할 때는 해당 Sub-issue의 Scope, Acceptance Criteria, Test / Validation과 관련 정본만 확인한다. Parent Issue는 범위 판단에 정보가 부족하거나 Scope·의존 관계가 변경됐을 때, 또는 모든 Sub-issue 완료 후 Parent를 종료할 때만 다시 확인한다.
+6. 이미 생성된 Sub-issue를 착수할 때는 Parent Issue의 Goal, Scope(제외 범위 포함), 직접 의존 관계만 한 번 확인한다. 구현 경계와 완료 기준은 Sub-issue의 Scope, Acceptance Criteria, Test / Validation을 사용하고, Parent 전체 본문은 범위 판단에 정보가 부족하거나 변경 알림을 받았을 때, 또는 모든 Sub-issue 완료 후 Parent를 종료할 때만 다시 확인한다.
 
 Repository 전체 문서나 디렉터리를 기본 Context로 적재하지 않는다.
 
@@ -47,7 +47,7 @@ Repository 전체 문서나 디렉터리를 기본 Context로 적재하지 않�
 - GitHub 작업을 시작할 때 요청된 Parent Issue, Issue Assignee, Related Domain과 영향받는 경로를 기준으로 A/B/C/D 중 현재 역할을 먼저 확인한다.
 - Issue 계획을 명시적으로 요청받은 경우 해당 역할의 Parent Issue와 직접 연결된 의존 관계만 확인하고, 그 Parent 아래의 Sub-issue만 생성·관리한다. 다른 역할의 Parent와 전체 Milestone 항목을 기본 Context로 읽지 않는다.
 - 이미 생성된 Sub-issue를 구현할 때는 Issue Template을 다시 읽지 않고, 선택한 Sub-issue의 Scope, Acceptance Criteria, Test / Validation과 직접 연결된 의존 Issue만 확인한다.
-- Sub-issue가 자체 완결적이면 구현 중 Parent를 다시 읽지 않는다. Sub-issue만으로 범위를 판단할 수 없거나 Parent Scope·의존 관계가 변경됐을 때, 또는 모든 Sub-issue 완료 후 Parent를 종료할 때만 다시 확인한다.
+- Sub-issue 착수 시 Parent의 Goal, Scope(제외 범위 포함), 직접 의존 관계를 한 번 확인한다. 구현 중에는 Sub-issue만으로 범위를 판단할 수 없거나 Parent 변경 알림을 받았을 때, 또는 모든 Sub-issue 완료 후 Parent를 종료할 때만 Parent 전체를 다시 확인한다.
 - A/B/C/D는 같은 공유 Milestone과 Project 안에서 각자 담당 Sub-issue의 Assignee와 상태를 갱신한다. Milestone 기간·전체 범위·Owner 간 우선순위는 임의로 변경하지 않고 사람이 종합 판단한다.
 - 공통 Contract 또는 다른 Owner 영역에 영향이 있을 때만 관련 Parent·Issue와 정본을 추가로 확인하고 해당 Owner와 합의한다.
 - 이 절은 Context와 책임 범위를 제한하는 규칙이다. Issue 생성·수정 등 GitHub 원격 변경은 사용자의 명시적 요청이 있을 때만 수행한다.
@@ -72,4 +72,4 @@ Project Context 전용 Skill은 두지 않는다. 이 파일의 Router를 사용
 
 ## Validation 위치
 
-검증 명령은 root의 실제 manifest/config, `.github/workflows/`, `ci/`를 정본으로 사용한다. 현재는 Repository Skeleton 단계라 실행 가능한 manifest와 Workflow가 없으므로 명령을 임의로 만들거나 도구를 Harness만을 위해 설치하지 않는다. 변경 영역별 기대 검증과 아직 미구현된 CI 기준은 `CONTRIBUTING.md`의 `Test와 CI`를 따른다.
+검증 명령은 root의 실제 manifest/config, `.github/workflows/`, `ci/`를 정본으로 사용한다. 현재 Python 검증은 `pyproject.toml`, `requirements-dev.txt`, `.github/workflows/python-checks.yml`에 Ruff Lint/Format, Unit Test, Contract Test로 정의되어 있으므로 변경 경로에 해당하면 실행한다. 실제 manifest나 Workflow에 아직 정의되지 않은 영역의 명령을 임의로 만들거나 도구를 Harness만을 위해 설치하지 않는다. 변경 영역별 검증은 `CONTRIBUTING.md`의 `Test와 CI`를 따른다.

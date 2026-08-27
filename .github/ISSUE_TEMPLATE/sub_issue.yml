@@ -74,4 +74,4 @@ body:
       required: true
   - type: markdown
     attributes:
-      value: "Issue 생성 후 해당 영역 Owner가 Assignee, 공유 Milestone, Project 상태와 실제 Parent/Sub-issue 및 Blocked by/Blocking 관계를 설정합니다. 구현 Agent는 이 Issue의 Scope, Acceptance Criteria, Test / Validation과 직접 의존 관계를 기준으로 작업합니다. 구현과 로컬 검증 후 dev 대상 PR을 생성하고, 사람의 Review/Merge와 dev 반영을 확인한 뒤 Issue를 수동으로 닫고 다음 Sub-issue를 시작합니다."
+      value: "Issue 생성 후 해당 영역 Owner가 Assignee, 공유 Milestone, Project 상태와 실제 Parent/Sub-issue 및 Blocked by/Blocking 관계를 설정합니다. 구현 Agent는 착수 시 Parent의 Goal, Scope(제외 범위 포함), 직접 의존 관계를 한 번 확인하고, 이 Issue의 Scope, Acceptance Criteria, Test / Validation을 구현 경계로 사용합니다. 구현과 로컬 검증 후 dev 대상 PR을 생성하고, 사람의 Review/Merge와 dev 반영을 확인한 뒤 Issue를 수동으로 닫고 다음 Sub-issue를 시작합니다."
