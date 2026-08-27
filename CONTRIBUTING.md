@@ -21,7 +21,7 @@ Issue
 dev → Pull Request → Required CI / Review → Merge Commit → main
 ```
 
-`main`에 직접 Push하지 않습니다. `dev`에서도 직접 작업하지 않고 Issue에 연결된 short-lived branch를 사용합니다.
+`main`과 `dev`에 직접 Push하지 않습니다. `dev`에서도 직접 작업하지 않고 Issue에 연결된 short-lived branch를 사용합니다.
 
 ## Issue와 작업 단위
 
@@ -92,6 +92,22 @@ chore/bootstrap-repository
 
 일반 branch는 `dev`에서 만들고 `dev`로 PR합니다. 안정화 통합 PR만 `dev`에서 `main`으로 보냅니다.
 
+허용되는 Platform Repository PR 경로는 아래 두 가지뿐입니다.
+
+| Head | Base | 허용 목적 |
+| --- | --- | --- |
+| `feature/*`, `fix/*`, `docs/*`, `refactor/*`, `test/*`, `chore/*` | `dev` | 일반 작업 |
+| `dev` | `main` | 안정화 통합 |
+
+다음 행위는 명시적으로 금지합니다.
+
+- 작업 branch에서 `main`으로 직접 PR 생성 또는 Merge
+- `main`이나 `dev`에 직접 Push 또는 force push
+- Required Check, Review, Ruleset을 admin/bypass 권한으로 우회
+- 자동 검사 실패 또는 대기 상태에서 Merge
+
+잘못된 base로 PR을 만들었다면 Merge하지 말고 닫은 뒤 `dev` 대상으로 다시 생성합니다.
+
 ## Commit
 
 Conventional Commits를 사용합니다.
@@ -135,14 +151,41 @@ PR에는 다음을 포함합니다.
 
 Path Filter로 실행되지 않을 수 있는 Workflow를 그대로 Required Check로 등록하지 않습니다. 모든 PR에서 완료 상태를 보고하는 공통 PR Gate를 두고 변경 영역별 검사를 연결하는 것이 목표입니다. 목표 규칙은 이 문서가 정본이며, 실제 강제 상태와 Bypass 대상은 GitHub Repository Settings가 정본입니다.
 
-> **TODO / Merge protection blocker:** 현재 활성 Ruleset에는 Required Status Check가 등록되어 있지 않고, 모든 PR에서 항상 완료 상태를 보고하는 공통 PR Gate Workflow도 없습니다. 따라서 Required CI 통과는 현재 절차상 Merge 조건일 뿐 GitHub이 기술적으로 강제하지 않습니다. 공통 PR Gate를 구현하고 `main`과 `dev` Ruleset의 Required Status Check로 등록하기 전에는 이 차이를 해소한 것으로 간주하지 않습니다.
+> **TODO / Merge protection blocker:** 현재 활성 Ruleset에는 Required Status Check가 등록되어 있지 않습니다. 모든 PR에서 항상 완료 상태를 보고하는 Workflow는 아래 `validate-pr-source`가 유일하며, 변경 영역별 검사를 연결하는 공통 PR Gate는 아직 없습니다. 따라서 Required CI 통과는 현재 절차상 Merge 조건일 뿐 GitHub이 기술적으로 강제하지 않습니다. 공통 PR Gate를 구현하고 `main`과 `dev` Ruleset의 Required Status Check로 등록하기 전에는 이 차이를 해소한 것으로 간주하지 않습니다.
 >
 > 현재 Ruleset은 2명 승인을 요구하고 Repository Settings는 Merge Commit, Squash Merge, Rebase Merge를 모두 허용하여, 이 문서의 목표인 최소 1명 승인과 Merge Commit만 허용하는 정책을 기술적으로 강제하지 못합니다. 목표 정책에 맞게 Repository Settings에서 Squash Merge와 Rebase Merge를 비활성화할 때까지 PR 운영에서는 Merge Commit만 선택합니다.
+
+### `validate-pr-source` Required Check
+
+문서 규칙만으로는 GitHub UI/API의 Merge를 차단할 수 없습니다. 위 표의 허용 경로는 `.github/workflows/validate-pr-source.yml`이 만드는 `validate-pr-source` check로 강제합니다.
+
+판정 기준은 다음과 같습니다.
+
+| base | 통과 조건 | 실패 예 |
+| --- | --- | --- |
+| `main` | head repository가 이 Repository이고 head branch가 `dev` | 작업 branch → `main`, Fork의 `dev` → `main` |
+| `dev` | head branch가 `main`/`dev`가 아니고 `feature/`, `fix/`, `docs/`, `refactor/`, `test/`, `chore/` 중 하나로 시작 | `main` → `dev`, prefix 없는 branch → `dev` |
+| 그 외 | 보호 대상이 아니므로 검사하지 않고 성공 | — |
+
+- Trigger는 `pull_request`가 아니라 `pull_request_target`입니다. `pull_request`는 PR merge commit의 workflow 정의를 실행하므로, 금지된 branch가 같은 job 이름을 유지한 채 이 파일을 항상 성공하도록 고쳐 Required Check를 통과할 수 있습니다. `pull_request_target`은 base branch의 신뢰된 정의를 실행합니다.
+- `pull_request_target`의 일반적인 위험은 PR 코드를 checkout해 실행하는 것입니다. 이 job은 checkout 없이 Event Metadata만 읽고 `contents: read` 권한만 가지므로 그 위험에 해당하지 않습니다.
+- `pull_request_target`은 **base branch에 workflow 파일이 있을 때만** 실행됩니다. 따라서 이 파일이 `dev`에 Merge되기 전의 PR에는 check가 나타나지 않습니다.
+- Path Filter와 branch filter를 두지 않아 **모든 PR에서 항상 완료 상태를 보고**합니다. 따라서 위 "Path Filter로 실행되지 않을 수 있는 Workflow를 Required Check로 등록하지 않는다"는 조건을 충족하며, Required Check로 등록해도 Merge가 대기 상태로 막히지 않습니다.
+
+Required Check는 PR 템플릿의 체크박스가 아니라 GitHub가 기록하는 status check입니다. Workflow가 check를 생성하고 Ruleset이 그 check를 필수로 지정해야 실패·대기 상태의 Merge가 차단됩니다. GitHub는 허용되지 않은 PR의 **생성 자체**를 기본 Ruleset만으로 차단하지 않으므로, 생성 금지는 협업 규칙으로 지키고 Merge는 이 check로 자동 차단합니다.
+
+현재 상태는 다음과 같습니다.
+
+- Workflow: `validate-pr-source` check를 생성합니다. **완료**
+- Ruleset: `main`의 Required Status Check로 등록해야 합니다. **미완료 — 저장소 관리자 작업**
+
+Ruleset 등록 전까지 이 check는 실패해도 Merge를 막지 못합니다. check 이름을 바꾸면 Ruleset이 참조를 잃고 영원히 대기 상태가 되므로 workflow의 job name을 그대로 유지합니다.
 
 ## Test와 CI
 
 GitHub Actions는 Path Filter로 변경 영역에 필요한 검사를 자동 선택하는 것을 원칙으로 합니다. 현재 실행 가능한 Workflow는 모든 PR의 Secret Scan과 Python 변경 경로의 Python Checks입니다.
 
+- 모든 PR: `validate-pr-source` (`main`/`dev` 대상 PR의 head/base 조합 검증)
 - 모든 PR: Secret Scan
 - Python 변경: Unit Test, Contract Test, Ruff Lint/Format
 - Terraform 변경(목표, 아직 Workflow 미구현): `terraform fmt -check`, `terraform validate`, TFLint, Checkov

@@ -68,6 +68,7 @@ Project Context 전용 Skill은 두지 않는다. 이 파일의 Router를 사용
 - Agent와 AWS Resource Tool은 Customer Workload를 변경하지 않는다. Terraform Apply는 승인 후 GitHub Actions만 수행한다.
 - Secret, Credential, Access Key, Session Token을 코드·문서·Fixture·로그에 넣지 않는다.
 - `main`과 `dev`에서 직접 구현하거나 Push하지 않는다. 허용 PR 경로와 Review 조건은 `CONTRIBUTING.md`를 따른다.
+- GitHub의 admin/bypass 권한으로 Branch/Ruleset/Required Check/Review 조건을 우회하지 않는다. 보호 설정을 약화·삭제하거나 Required Check 이름을 바꾸지 않는다. PR의 head/base 조합을 검사하는 Required Check 이름은 `validate-pr-source`다.
 - 사용자 명시 요청 없이 commit, push, PR 생성, merge, remote 변경을 수행하지 않는다.
 
 ## Validation 위치
