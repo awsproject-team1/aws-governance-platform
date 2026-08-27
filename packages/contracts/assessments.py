@@ -1,5 +1,7 @@
 """Assessment transport contracts for the Initial Assessment start protocol."""
 
+from __future__ import annotations
+
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
@@ -226,6 +228,8 @@ class AssessmentLinkageConfirmation:
         require_non_empty_string(self.job_id, "job_id")
         require_non_empty_string(self.assessment_id, "assessment_id")
         _require_positive_int(self.revision, "revision")
+        if self.revision != 1:
+            raise ValueError("revision must be 1")
 
     @classmethod
     def from_dict(cls, value: object) -> AssessmentLinkageConfirmation:
@@ -336,6 +340,20 @@ class AssessmentProgressAcknowledgement:
         require_non_empty_string(self.job_id, "job_id")
         require_non_empty_string(self.update_id, "update_id")
         _require_positive_int(self.revision, "revision")
+
+    @classmethod
+    def from_dict(cls, value: object) -> AssessmentProgressAcknowledgement:
+        """Parse the acknowledgement sent on the A-to-C progress boundary."""
+        fields = _require_exact_fields(
+            value,
+            "assessment_progress_acknowledgement",
+            frozenset({"job_id", "update_id", "revision"}),
+        )
+        return cls(
+            job_id=fields["job_id"],
+            update_id=fields["update_id"],
+            revision=fields["revision"],
+        )
 
     def to_dict(self) -> dict[str, object]:
         """Return the revision applied by the first delivery of the update."""

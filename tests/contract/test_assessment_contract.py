@@ -111,10 +111,22 @@ class AssessmentContractTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "status must be RUNNING"):
             AssessmentLinkageConfirmation.from_dict(invalid_status)
 
+        invalid_revisions = (
+            (0, ValueError, "revision must be a positive integer"),
+            (2, ValueError, "revision must be 1"),
+            (True, TypeError, "revision must be an integer"),
+        )
+        for revision, error_type, message in invalid_revisions:
+            with self.subTest(revision=revision):
+                with self.assertRaisesRegex(error_type, message):
+                    AssessmentLinkageConfirmation.from_dict(
+                        {**self.fixture["linkage_confirmation"], "revision": revision}
+                    )
+
     def test_progress_update_has_a_separate_update_id_and_returns_applied_revision(self) -> None:
         update = AssessmentProgressUpdate.from_dict(self.fixture["progress_update"])
-        acknowledgement = AssessmentProgressAcknowledgement(
-            **self.fixture["progress_acknowledgement"]
+        acknowledgement = AssessmentProgressAcknowledgement.from_dict(
+            self.fixture["progress_acknowledgement"]
         )
 
         self.assertEqual(update.to_dict(), self.fixture["progress_update"])
@@ -122,6 +134,32 @@ class AssessmentContractTest(unittest.TestCase):
         self.assertEqual(update.update_id, "update-001")
         self.assertEqual(update.expected_revision, 1)
         self.assertEqual(acknowledgement.revision, 2)
+
+    def test_progress_acknowledgement_rejects_invalid_wire_payloads(self) -> None:
+        base = self.fixture["progress_acknowledgement"]
+        cases = (
+            (
+                {key: value for key, value in base.items() if key != "update_id"},
+                ValueError,
+                "assessment_progress_acknowledgement is missing field\\(s\\): update_id",
+            ),
+            (
+                {**base, "unexpected": "value"},
+                ValueError,
+                "assessment_progress_acknowledgement has unknown field\\(s\\): unexpected",
+            ),
+            (
+                {**base, "revision": 0},
+                ValueError,
+                "revision must be a positive integer",
+            ),
+            ({**base, "revision": True}, TypeError, "revision must be an integer"),
+        )
+
+        for payload, error_type, message in cases:
+            with self.subTest(payload=payload):
+                with self.assertRaisesRegex(error_type, message):
+                    AssessmentProgressAcknowledgement.from_dict(payload)
 
     def test_progress_requires_sanitized_error_only_for_failed_status(self) -> None:
         base = self.fixture["progress_update"]
