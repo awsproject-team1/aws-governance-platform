@@ -42,9 +42,5 @@ Thumbs.db
 tmp/
 *.log
 
-# 구버전 문서 체계로 작업했던 참고 스냅샷은 리포 밖(../awsproject-before-reference)으로
-# 옮겼다. 정본은 docs/ 다. 이 규칙은 스냅샷이 다시 리포 안으로 복사되는 사고를 막는 안전장치다.
-before/
-
 # Keep Terraform dependency lock files tracked:
 # .terraform.lock.hcl
