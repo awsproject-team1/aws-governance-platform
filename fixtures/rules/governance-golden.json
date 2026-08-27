@@ -83,7 +83,7 @@
       "evaluation_type": "IAC",
       "severity": "MEDIUM",
       "requirement": "S3 버킷은 저장 시 서버 측 암호화를 적용해야 한다.",
-      "remediation_type": "IAC"
+      "remediation_type": "TERRAFORM_PATCH"
     },
     {
       "rule_id": "CUSTOMER-S3-PROC-001",
@@ -120,10 +120,10 @@
       ],
       "resource_type": "aws_s3_bucket",
       "control_key": "s3.public_access_block.enabled",
-      "evaluation_type": "IAC",
+      "evaluation_type": "AWS",
       "severity": "HIGH",
       "requirement": "퍼블릭 스토리지를 제외한 모든 버킷에 Block Public Access를 적용해야 한다.",
-      "remediation_type": "IAC"
+      "remediation_type": "TERRAFORM_PATCH"
     },
     {
       "rule_id": "GLOBAL-S3-PAB-001",
@@ -140,17 +140,17 @@
       ],
       "resource_type": "aws_s3_bucket",
       "control_key": "s3.public_access_block.enabled",
-      "evaluation_type": "AWS",
+      "evaluation_type": "IAC",
       "severity": "HIGH",
       "requirement": "S3 범용 버킷은 네 가지 버킷 수준 Block Public Access 설정을 모두 적용해야 한다.",
-      "remediation_type": "GUIDE"
+      "remediation_type": "TERRAFORM_PATCH"
     }
   ],
   "approvals": [
     {
       "rule_id": "CUSTOMER-S3-ENC-001",
       "version": 1,
-      "rule_content_hash": "sha256:74dd7b610aab334ecfb5494a191239de8d5edac26194797e6b750cdf600d601d",
+      "rule_content_hash": "sha256:fb1a38bcf41c7afda4406634361f7532b6fdf2bac4150426721dc06f56e9c64d",
       "approved_by": "fixture-admin",
       "approved_at": "2026-08-25T00:00:00Z"
     },
@@ -164,14 +164,14 @@
     {
       "rule_id": "CUSTOMER-S3-PAB-003",
       "version": 2,
-      "rule_content_hash": "sha256:0d2bc21c72ee0880abc4b8b804371f9dade13bd58261bd1a3dca69a2469dd1bf",
+      "rule_content_hash": "sha256:91e0aa0cb40238c03c3f6cedff574533dd71a409fb73a929bd5b2513a7962b8e",
       "approved_by": "fixture-admin",
       "approved_at": "2026-08-25T00:00:00Z"
     },
     {
       "rule_id": "GLOBAL-S3-PAB-001",
       "version": 1,
-      "rule_content_hash": "sha256:2b771aa608eb2af13e8f92f9f01b6a88fc3b27c9b141cb342de112a186a517bf",
+      "rule_content_hash": "sha256:6bf6e247bec81a43d4ce8e87a72b10ad7f5bbdd6424ece0a90788310254c2221",
       "approved_by": "fixture-admin",
       "approved_at": "2026-08-25T00:00:00Z"
     }

@@ -26,13 +26,20 @@
       "section": "S3.8",
       "content_hash": "sha256:304a3934022077887457717c24d3ed7a27ef1e09a6b3564d9c0a60cfbe482463"
     },
-    "semantic_fields_match": true,
+    "semantic_fields_match": false,
     "source_reference_matches": false,
-    "requires_new_rule_version_and_human_approval": true
+    "requires_new_rule_version_and_human_approval": true,
+    "semantic_difference": {
+      "evaluation_type": {
+        "official_snapshot": "AWS",
+        "approved_rule": "IAC"
+      },
+      "note": "Official FSBP S3.8 is evaluated by AWS Security Hub against AWS actual state. ADR-0002 fixes the first slice to evaluate customer IaC, so this platform Rule is IaC-evaluated. The difference is intentional and is exactly what human approval must confirm; it is not drift to be auto-corrected."
+    }
   },
   "execution_gate": {
     "deliver_as_officially_revalidated_rule": false,
-    "reason": "The approved v1 Rule pins legacy fixture evidence. A server-assigned new Rule version and human approval are required before the official snapshot reference can enter an EffectiveRuleSet."
+    "reason": "The approved v1 Rule pins legacy fixture evidence, and its evaluation_type (IAC, per ADR-0002) differs from the official S3.8 control (AWS). A server-assigned new Rule version and human approval are required before the official snapshot reference can enter an EffectiveRuleSet."
   },
   "metric_shape_examples_for_existing_v1_contract_only": [
     {

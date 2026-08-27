@@ -3,7 +3,12 @@ import unittest
 from dataclasses import asdict
 from pathlib import Path
 
-from packages.contracts.governance import ContractValidationError, Rule, SourceType
+from packages.contracts.governance import (
+    ContractValidationError,
+    EvaluationType,
+    Rule,
+    SourceType,
+)
 from packages.governance.compliance.readiness import (
     ComplianceItemMapping,
     EvidenceReadinessStatus,
@@ -259,8 +264,24 @@ class OfficialFsbpS3SnapshotTests(unittest.TestCase):
             )
         )
         result = revalidate_rule_against_official_snapshot(rule, self.control_set, "S3.8")
-        self.assertTrue(result.semantic_fields_match)
+
+        # 승인된 Reference가 새 공식 snapshot에서 파생된 reference와 다르다.
         self.assertFalse(result.source_reference_matches)
+
+        # 의미 필드도 다르다. 공식 S3.8은 AWS 실제 상태로 평가하는 control이지만
+        # ADR-0002가 첫 Slice를 고객 IaC 평가로 고정했으므로 Platform Rule은 IAC다.
+        # 이 차이는 drift가 아니라 의도된 결정이며 Human Approval이 확인할 항목이다.
+        evidence = self.control_set.evidence_for("S3.8")
+        self.assertIs(evidence.evaluation_type, EvaluationType.AWS)
+        self.assertIs(rule.evaluation_type, EvaluationType.IAC)
+        self.assertFalse(result.semantic_fields_match)
+
+        # 나머지 의미 필드는 공식 metadata와 일치한다.
+        self.assertEqual(rule.resource_type, evidence.contract_resource_type)
+        self.assertIs(rule.severity, evidence.severity)
+        self.assertEqual(rule.requirement, evidence.requirement)
+
+        # 두 차이 모두 자동 보정 대상이 아니다. Rule은 그대로 남고 재승인이 필요하다.
         self.assertTrue(result.requires_new_rule_version_and_human_approval)
         self.assertEqual(rule.version, 1)
         self.assertEqual(rule.status.value, "ACTIVE")

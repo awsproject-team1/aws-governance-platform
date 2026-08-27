@@ -104,7 +104,11 @@ Tagging Global Source는 지원 Resource의 Tag 지원 여부와 Tag 존재 여�
 
 FSBP S3의 첫 공식-reference metadata snapshot은 `fixtures/policy/aws-fsbp-s3-official-snapshot.json`이다. 이는 AWS 문서 전문 복제본이 아니라 공식 URL, 관찰한 FSBP v1.0.0 S3 Control ID 12개, 선택 `S3.8`, 나머지 11개 제외 사유, 검토에 필요한 S3.8 metadata를 동결한 최소 projection이다. `FrozenOfficialControlSet`은 관찰 집합이 선택/제외 집합으로 정확히 분할되는지 확인하고 evidence content hash, canonical content hash, control-set hash를 서버에서 다시 계산한다.
 
-기존 `GLOBAL-S3-PAB-001@1`의 requirement/severity/evaluation type은 공식 S3.8 metadata와 의미상 일치하지만 승인된 `SourceReference`는 새 공식 snapshot에서 파생된 reference와 일치하지 않는다. 따라서 기존 ACTIVE content를 자동 수정하지 않으며, 공식 snapshot을 pin하는 새 Rule version과 Human Approval 전에는 이를 공식 재검증 완료 Rule로 Effective Rule Set에 전달하지 않는다.
+기존 `GLOBAL-S3-PAB-001@1`은 공식 S3.8 metadata와 두 가지 점에서 다르다. 승인된 `SourceReference`가 새 공식 snapshot에서 파생된 reference와 다르고, `evaluation_type`도 다르다. 공식 S3.8은 AWS Security Hub가 AWS 실제 상태로 평가하는 `AWS` control이지만 ADR-0002는 첫 Slice를 고객 IaC 평가로 고정했으므로 이 Platform Rule은 `IAC`다. requirement/severity/resource_type은 일치한다.
+
+`evaluation_type` 차이는 drift가 아니라 의도된 Platform 결정이며, 자동 보정 대상이 아니라 Human Approval이 확인해야 할 항목이다. 따라서 기존 ACTIVE content를 자동 수정하지 않으며, 공식 snapshot을 pin하는 새 Rule version과 Human Approval 전에는 이를 공식 재검증 완료 Rule로 Effective Rule Set에 전달하지 않는다.
+
+`revalidate_rule_against_official_snapshot`의 `semantic_fields_match`가 `evaluation_type`을 포함하므로, 공식 control의 평가 방식과 Platform의 평가 방식이 다르면 항상 재승인이 필요하다고 보고한다. 이 비교에서 `evaluation_type`을 분리할지는 Open Decision이며 Area C의 evaluator 계약과 함께 검토한다.
 
 ### 임의 문서로부터의 Source Reference 생성
 
@@ -206,8 +210,9 @@ LLM에 맡기지 않는 것: 실제 파일 형식 판별, 원문 hash 생성, So
 - Consumer: Policy Profile, Effective Rule Set, Assessment Agent, Finding, Scoring
 - Required: `rule_id`, `version`, `status`, `source_type`, `source_references[]`, `resource_type`, `control_key`, `evaluation_type`, `severity`, `requirement`, `remediation_type`
 - Conditional: Scope/Threshold reference, Companion/Related Resource 정보
-- Evaluation Type: `IAC`, `AWS`, `HYBRID`, `MANUAL`
+- Evaluation Type: `IAC`, `AWS`, `HYBRID`, `MANUAL` (실행 Enum `EvaluationType`)
 - Severity: `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`
+- Remediation Type: 현재 사용 값은 `TERRAFORM_PATCH`, `MANUAL`. Contract에서는 아직 Enum이 아닌 free-form `str`이며 전체 어휘는 Open Decision이다. Consumer가 D이므로 Enum 확정은 D와 함께 한다. 같은 의미에 두 토큰이 생기지 않도록 IaC 패치를 뜻하는 값은 `TERRAFORM_PATCH` 하나로 통일한다.
 - Known lifecycle states: `ACTIVE`, `DEPRECATED`; 전체 Candidate/Approval Status Enum은 Open Decision
 - Validation: Registry와 Source Reference를 검증하고 `ACTIVE`는 `(rule_id, version)` Human Approval이 필요하다. 근거 없는 Criterion/Threshold를 생성하지 않는다.
 - Versioning: requirement, severity, scope reference, control key, evaluation type, remediation type, resource/source mapping 등 평가 의미가 바뀌면 version을 올리고 재승인한다. 삭제 대신 `DEPRECATED`를 사용한다.
