@@ -74,4 +74,4 @@ body:
       required: true
   - type: markdown
     attributes:
-      value: "Issue 생성 후 해당 영역 Owner가 Assignee, 공유 Milestone, Project 상태와 실제 Parent/Sub-issue 및 Blocked by/Blocking 관계를 설정합니다. 구현 Agent는 착수 시 Parent의 Goal, Scope(제외 범위 포함), 직접 의존 관계를 한 번 확인하고, 이 Issue의 Scope, Acceptance Criteria, Test / Validation을 구현 경계로 사용합니다. 구현과 로컬 검증 후 dev 대상 PR을 생성하고, 사람의 Review/Merge와 dev 반영을 확인한 뒤 Issue를 수동으로 닫고 다음 Sub-issue를 시작합니다."
+      value: "Issue 생성 후 해당 영역 Owner가 Assignee, 공유 Milestone, Project 상태와 실제 Parent/Sub-issue 및 Blocked by/Blocking 관계를 설정합니다. 구현 Agent는 착수 시 Parent의 Goal, Scope(제외 범위 포함), 직접 의존 관계를 한 번 확인하고, 이 Issue의 Scope, Acceptance Criteria, Test / Validation을 구현 경계로 사용합니다. 구현과 로컬 검증 후 기본 브랜치인 dev 대상 PR을 생성합니다. 모든 완료 조건을 충족한 PR은 `Closes #이슈번호`를 사용하고, 일부 범위만 다루면 `Refs #이슈번호`를 사용해 Issue를 열어 둡니다. 사람의 Review/Merge 후 GitHub의 자동 종료를 확인하고 다음 Sub-issue를 시작하며, Agent는 Issue close API를 호출하지 않습니다."
