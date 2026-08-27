@@ -82,7 +82,10 @@ class EvaluationStatus(str, Enum):
     PASS = "PASS"
     FAIL = "FAIL"
     MANUAL_REVIEW = "MANUAL_REVIEW"
-    NOT_APPLICABLE = "N/A"
+    # wire value에 "N/A"를 쓰지 않는다. 이 값은 C가 URL path segment, DynamoDB sort key,
+    # S3 prefix, CloudWatch metric dimension에 그대로 싣는 자리로 가는데 슬래시가 들어가면
+    # 경계마다 escaping 규칙이 갈린다. 화면 표기는 Frontend가 따로 정한다.
+    NOT_APPLICABLE = "NOT_APPLICABLE"
 
 
 class ExecutionStatus(str, Enum):
