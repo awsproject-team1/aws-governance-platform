@@ -17,6 +17,7 @@ from tools.github.errors import (
     SnapshotMismatchError,
     SnapshotNotFoundError,
     SnapshotStorageError,
+    SnapshotTooLargeError,
 )
 from tools.github.ports import (
     ApprovalRegistry,
@@ -27,6 +28,13 @@ from tools.github.ports import (
 
 _COMMIT_SHA = re.compile(r"[0-9a-f]{40}")
 _TERRAFORM_SUFFIXES = (".tf", ".tf.json")
+
+# A customer Repository is untrusted input, so capture stays inside explicit
+# limits instead of failing as an out-of-memory process exit. The exact values
+# are an Open Decision and are tuned once real Repository sizes are measured.
+MAX_TERRAFORM_FILES = 512
+MAX_TERRAFORM_FILE_BYTES = 2 * 1024 * 1024
+MAX_SNAPSHOT_PAYLOAD_BYTES = 32 * 1024 * 1024
 
 
 def is_terraform_path(path: str) -> bool:
@@ -67,24 +75,49 @@ def build_iac_snapshot(
     terraform_paths = tuple(sorted(path for path in paths if is_terraform_path(path)))
     if not terraform_paths:
         raise NoTerraformFilesError("approved commit contains no Terraform files")
+    if len(terraform_paths) > MAX_TERRAFORM_FILES:
+        raise SnapshotTooLargeError(
+            f"approved commit exceeds {MAX_TERRAFORM_FILES} Terraform files"
+        )
 
     sources: dict[str, str] = {}
+    captured_bytes = 0
     for path in terraform_paths:
         try:
-            sources[path] = contents.read_text(repository, commit_sha, path)
+            text = contents.read_text(repository, commit_sha, path)
         except GitHubToolError:
             raise
         except Exception as error:
             raise InstallationAccessError("Repository content read failed") from error
+
+        if not isinstance(text, str):
+            raise InstallationAccessError("Repository content read returned non-text")
+
+        text_bytes = len(text.encode("utf-8"))
+        if text_bytes > MAX_TERRAFORM_FILE_BYTES:
+            raise SnapshotTooLargeError(
+                f"one Terraform file exceeds {MAX_TERRAFORM_FILE_BYTES} bytes"
+            )
+
+        captured_bytes += text_bytes
+        if captured_bytes > MAX_SNAPSHOT_PAYLOAD_BYTES:
+            raise SnapshotTooLargeError(
+                f"captured Terraform text exceeds {MAX_SNAPSHOT_PAYLOAD_BYTES} bytes"
+            )
+
+        sources[path] = text
 
     captured = IaCSnapshotSources(
         repository_id=repository.repository_id,
         commit_sha=commit_sha,
         sources=sources,
     )
+    payload = captured.to_payload_bytes()
+    if len(payload) > MAX_SNAPSHOT_PAYLOAD_BYTES:
+        raise SnapshotTooLargeError(f"snapshot payload exceeds {MAX_SNAPSHOT_PAYLOAD_BYTES} bytes")
 
     try:
-        snapshot_ref = artifacts.put_snapshot(captured.to_payload_bytes())
+        snapshot_ref = artifacts.put_snapshot(payload)
     except GitHubToolError:
         raise
     except Exception as error:
@@ -121,6 +154,11 @@ def read_iac_snapshot_sources(
         raise
     except Exception as error:
         raise SnapshotNotFoundError("stored snapshot could not be read") from error
+
+    if isinstance(payload, bytes | bytearray) and len(payload) > MAX_SNAPSHOT_PAYLOAD_BYTES:
+        raise SnapshotTooLargeError(
+            f"stored snapshot payload exceeds {MAX_SNAPSHOT_PAYLOAD_BYTES} bytes"
+        )
 
     try:
         captured = decode_iac_snapshot_sources(payload)

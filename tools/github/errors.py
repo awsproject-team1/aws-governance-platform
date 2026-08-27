@@ -35,3 +35,7 @@ class SnapshotNotFoundError(GitHubToolError):
 
 class SnapshotMismatchError(GitHubToolError):
     """Raised when stored Terraform source text does not match its snapshot."""
+
+
+class SnapshotTooLargeError(GitHubToolError):
+    """Raised when a Repository commit exceeds an approved capture limit."""

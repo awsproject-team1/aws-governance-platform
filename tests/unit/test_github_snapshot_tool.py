@@ -5,6 +5,9 @@ import unittest
 
 from packages.contracts import IaCSnapshot, IaCSnapshotSources
 from tools.github import (
+    MAX_SNAPSHOT_PAYLOAD_BYTES,
+    MAX_TERRAFORM_FILE_BYTES,
+    MAX_TERRAFORM_FILES,
     ApprovedRepository,
     CommitNotFoundError,
     InstallationAccessError,
@@ -13,6 +16,7 @@ from tools.github import (
     SnapshotMismatchError,
     SnapshotNotFoundError,
     SnapshotStorageError,
+    SnapshotTooLargeError,
     build_iac_snapshot,
     is_terraform_path,
     read_iac_snapshot_sources,
@@ -227,6 +231,93 @@ class BuildIaCSnapshotTest(unittest.TestCase):
         self.assertEqual(first.stored, second.stored)
 
 
+class CaptureLimitTest(unittest.TestCase):
+    def test_too_many_terraform_files_are_rejected_before_reading(self) -> None:
+        paths = tuple(f"module{index:04d}/main.tf" for index in range(MAX_TERRAFORM_FILES + 1))
+        contents = StubContents(paths=paths)
+
+        with self.assertRaisesRegex(SnapshotTooLargeError, "Terraform files"):
+            build_iac_snapshot(
+                repository_id="repo-001",
+                commit_sha=_COMMIT,
+                approvals=StubApprovals(_APPROVED),
+                contents=contents,
+                artifacts=StubArtifacts(),
+            )
+
+        self.assertEqual(contents.read_paths, [])
+
+    def test_capture_accepts_the_maximum_terraform_file_count(self) -> None:
+        paths = tuple(f"module{index:04d}/main.tf" for index in range(MAX_TERRAFORM_FILES))
+        artifacts = StubArtifacts()
+
+        snapshot = build_iac_snapshot(
+            repository_id="repo-001",
+            commit_sha=_COMMIT,
+            approvals=StubApprovals(_APPROVED),
+            contents=StubContents(paths=paths, sources=dict.fromkeys(paths, "resource {}")),
+            artifacts=artifacts,
+        )
+
+        self.assertEqual(len(snapshot.files), MAX_TERRAFORM_FILES)
+
+    def test_one_oversized_terraform_file_is_rejected(self) -> None:
+        oversized = "a" * (MAX_TERRAFORM_FILE_BYTES + 1)
+
+        with self.assertRaisesRegex(SnapshotTooLargeError, "one Terraform file exceeds"):
+            build_iac_snapshot(
+                repository_id="repo-001",
+                commit_sha=_COMMIT,
+                approvals=StubApprovals(_APPROVED),
+                contents=StubContents(paths=("main.tf",), sources={"main.tf": oversized}),
+                artifacts=StubArtifacts(),
+            )
+
+    def test_accumulated_terraform_text_is_bounded(self) -> None:
+        per_file = MAX_TERRAFORM_FILE_BYTES
+        file_count = MAX_SNAPSHOT_PAYLOAD_BYTES // per_file + 1
+        paths = tuple(f"module{index:04d}/main.tf" for index in range(file_count))
+        artifacts = StubArtifacts()
+
+        with self.assertRaisesRegex(SnapshotTooLargeError, "captured Terraform text exceeds"):
+            build_iac_snapshot(
+                repository_id="repo-001",
+                commit_sha=_COMMIT,
+                approvals=StubApprovals(_APPROVED),
+                contents=StubContents(paths=paths, sources=dict.fromkeys(paths, "a" * per_file)),
+                artifacts=artifacts,
+            )
+
+        self.assertEqual(artifacts.stored, [])
+
+    def test_multibyte_text_is_measured_in_bytes(self) -> None:
+        multibyte = "가" * (MAX_TERRAFORM_FILE_BYTES // 3 + 1)
+
+        self.assertLess(len(multibyte), MAX_TERRAFORM_FILE_BYTES)
+        with self.assertRaisesRegex(SnapshotTooLargeError, "one Terraform file exceeds"):
+            build_iac_snapshot(
+                repository_id="repo-001",
+                commit_sha=_COMMIT,
+                approvals=StubApprovals(_APPROVED),
+                contents=StubContents(paths=("main.tf",), sources={"main.tf": multibyte}),
+                artifacts=StubArtifacts(),
+            )
+
+    def test_non_text_content_surfaces_as_a_tool_error(self) -> None:
+        class BytesContents(StubContents):
+            def read_text(self, repository: ApprovedRepository, commit_sha: str, path: str) -> str:
+                return b"resource {}"  # type: ignore[return-value]
+
+        with self.assertRaisesRegex(InstallationAccessError, "non-text"):
+            build_iac_snapshot(
+                repository_id="repo-001",
+                commit_sha=_COMMIT,
+                approvals=StubApprovals(_APPROVED),
+                contents=BytesContents(paths=("main.tf",)),
+                artifacts=StubArtifacts(),
+            )
+
+
 class StubReader:
     def __init__(self, *, payload: bytes = b"", error: Exception | None = None) -> None:
         self._payload = payload
@@ -326,6 +417,15 @@ class ReadIaCSnapshotSourcesTest(unittest.TestCase):
             read_iac_snapshot_sources(
                 snapshot={"snapshot_ref": "snapshot-ref-001"},
                 reader=StubReader(payload=_payload()),
+            )
+
+    def test_oversized_stored_payload_is_rejected_before_decoding(self) -> None:
+        oversized = b"a" * (MAX_SNAPSHOT_PAYLOAD_BYTES + 1)
+
+        with self.assertRaisesRegex(SnapshotTooLargeError, "stored snapshot payload exceeds"):
+            read_iac_snapshot_sources(
+                snapshot=_snapshot(),
+                reader=StubReader(payload=oversized),
             )
 
 

@@ -92,6 +92,77 @@ class IaCSnapshotContractTest(unittest.TestCase):
                 snapshot_ref="",
             )
 
+    def test_files_reject_paths_that_escape_a_work_tree(self) -> None:
+        escaping_paths = (
+            "../../../../home/user/.ssh/id_rsa.tf",
+            "/etc/terraform/main.tf",
+            "..\\..\\windows\\system.tf",
+            "C:/terraform/main.tf",
+            "modules/../../main.tf",
+            "modules//main.tf",
+            "./main.tf",
+            "main.tf\x00.txt",
+            " main.tf",
+            "main.tf ",
+        )
+
+        for path in escaping_paths:
+            with self.subTest(path=path):
+                with self.assertRaises(ValueError):
+                    IaCSnapshot(
+                        repository_id="repo-001",
+                        commit_sha=_COMMIT,
+                        files=(path,),
+                        snapshot_ref="snapshot-ref-001",
+                    )
+
+    def test_files_accept_normalized_repository_relative_paths(self) -> None:
+        snapshot = IaCSnapshot(
+            repository_id="repo-001",
+            commit_sha=_COMMIT,
+            files=("environments/prod/main.tf", "main.tf", "modules/s3/main.tf.json"),
+            snapshot_ref="snapshot-ref-001",
+        )
+
+        self.assertEqual(len(snapshot.files), 3)
+
+    def test_snapshot_ref_must_not_expose_a_storage_location(self) -> None:
+        exposing_refs = (
+            "s3://prod-governance-artifacts/customers/acme/snap.json",
+            "customers/acme/snapshots/001",
+            "https://bucket.s3.amazonaws.com/key",
+            "snapshot ref 001",
+            "snapshot\\ref",
+            "-leading-hyphen",
+            "a" * 256,
+        )
+
+        for snapshot_ref in exposing_refs:
+            with self.subTest(snapshot_ref=snapshot_ref):
+                with self.assertRaisesRegex(ValueError, "snapshot_ref must be an opaque token"):
+                    IaCSnapshot(
+                        repository_id="repo-001",
+                        commit_sha=_COMMIT,
+                        files=("main.tf",),
+                        snapshot_ref=snapshot_ref,
+                    )
+
+    def test_snapshot_ref_accepts_opaque_tokens(self) -> None:
+        for snapshot_ref in (
+            "snapshot-ref-001",
+            "sha256:" + "a" * 64,
+            "01JBX9Z0M7QFTK8W2N4V6Y.snapshot",
+            "a" * 255,
+        ):
+            with self.subTest(snapshot_ref=snapshot_ref):
+                snapshot = IaCSnapshot(
+                    repository_id="repo-001",
+                    commit_sha=_COMMIT,
+                    files=("main.tf",),
+                    snapshot_ref=snapshot_ref,
+                )
+                self.assertEqual(snapshot.snapshot_ref, snapshot_ref)
+
     def test_snapshot_does_not_expose_terraform_source_text(self) -> None:
         snapshot = IaCSnapshot(
             repository_id="repo-001",
@@ -190,6 +261,35 @@ class IaCSnapshotSourcesContractTest(unittest.TestCase):
             decode_iac_snapshot_sources(
                 b'{"repository_id": "repo-001", "commit_sha": "nope", "sources": {"main.tf": "x"}}'
             )
+
+    def test_sources_reject_paths_that_escape_a_work_tree(self) -> None:
+        for path in ("../secrets.tf", "/etc/main.tf", "..\\main.tf", "./main.tf"):
+            with self.subTest(path=path):
+                with self.assertRaises(ValueError):
+                    IaCSnapshotSources(
+                        repository_id="repo-001",
+                        commit_sha=_COMMIT,
+                        sources={path: "resource {}"},
+                    )
+
+    def test_stored_payload_with_an_escaping_path_is_rejected_on_decode(self) -> None:
+        payload = (
+            b'{"repository_id": "repo-001", "commit_sha": "'
+            + (b"a" * 40)
+            + b'", "sources": {"../../../.ssh/id_rsa.tf": "resource {}"}}'
+        )
+
+        with self.assertRaisesRegex(IaCSnapshotPayloadError, "does not satisfy the sources"):
+            decode_iac_snapshot_sources(payload)
+
+    def test_empty_terraform_files_remain_valid(self) -> None:
+        captured = IaCSnapshotSources(
+            repository_id="repo-001",
+            commit_sha=_COMMIT,
+            sources={"empty.tf": ""},
+        )
+
+        self.assertEqual(captured.sources["empty.tf"], "")
 
 
 if __name__ == "__main__":

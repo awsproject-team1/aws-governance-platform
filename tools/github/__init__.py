@@ -14,6 +14,7 @@ from tools.github.errors import (
     SnapshotMismatchError,
     SnapshotNotFoundError,
     SnapshotStorageError,
+    SnapshotTooLargeError,
 )
 from tools.github.ports import (
     ApprovalRegistry,
@@ -23,12 +24,18 @@ from tools.github.ports import (
     SnapshotArtifactStore,
 )
 from tools.github.snapshot import (
+    MAX_SNAPSHOT_PAYLOAD_BYTES,
+    MAX_TERRAFORM_FILE_BYTES,
+    MAX_TERRAFORM_FILES,
     build_iac_snapshot,
     is_terraform_path,
     read_iac_snapshot_sources,
 )
 
 __all__ = [
+    "MAX_SNAPSHOT_PAYLOAD_BYTES",
+    "MAX_TERRAFORM_FILES",
+    "MAX_TERRAFORM_FILE_BYTES",
     "ApprovalRegistry",
     "ApprovedRepository",
     "CommitNotFoundError",
@@ -42,6 +49,7 @@ __all__ = [
     "SnapshotMismatchError",
     "SnapshotNotFoundError",
     "SnapshotStorageError",
+    "SnapshotTooLargeError",
     "build_iac_snapshot",
     "is_terraform_path",
     "read_iac_snapshot_sources",

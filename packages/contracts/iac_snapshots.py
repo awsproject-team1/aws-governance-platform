@@ -9,6 +9,9 @@ from types import MappingProxyType
 from packages.contracts._validation import require_non_empty_string
 
 _COMMIT_SHA = re.compile(r"[0-9a-f]{40}")
+_WINDOWS_DRIVE = re.compile(r"[A-Za-z]:")
+_SNAPSHOT_REF = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,254}")
+_TRAVERSAL_SEGMENTS = frozenset({"", ".", ".."})
 
 
 def _require_commit_sha(value: object, field_name: str) -> None:
@@ -16,6 +19,46 @@ def _require_commit_sha(value: object, field_name: str) -> None:
     require_non_empty_string(value, field_name)
     if _COMMIT_SHA.fullmatch(value) is None:  # type: ignore[arg-type]
         raise ValueError(f"{field_name} must be 40 lowercase hexadecimal characters")
+
+
+def _require_repository_path(value: object, field_name: str) -> None:
+    """Require a normalized Repository-relative path that cannot escape a work tree.
+
+    Captured paths reach consumers that join them onto a local directory, so the
+    contract rejects absolute paths, drive letters, backslashes, NUL bytes, and
+    any traversal or empty segment.
+    """
+    require_non_empty_string(value, field_name)
+    path: str = value  # type: ignore[assignment]
+
+    if "\x00" in path:
+        raise ValueError(f"{field_name} must not contain a NUL byte")
+    if "\\" in path:
+        raise ValueError(f"{field_name} must use forward slashes only")
+    if path.startswith("/"):
+        raise ValueError(f"{field_name} must be Repository-relative")
+    if _WINDOWS_DRIVE.match(path) is not None:
+        raise ValueError(f"{field_name} must be Repository-relative")
+    if any(segment in _TRAVERSAL_SEGMENTS for segment in path.split("/")):
+        raise ValueError(f"{field_name} must not contain an empty or traversal segment")
+    if path != path.strip():
+        raise ValueError(f"{field_name} must not have leading or trailing whitespace")
+
+
+def _require_snapshot_ref(value: object, field_name: str) -> None:
+    """Require an opaque snapshot reference that cannot carry a storage location.
+
+    ``docs/CONTRACTS.md`` states that this reference hides the storage location,
+    so the contract rejects URI schemes, path separators, and whitespace instead
+    of only documenting the intent.
+    """
+    require_non_empty_string(value, field_name)
+    if _SNAPSHOT_REF.fullmatch(value) is None:  # type: ignore[arg-type]
+        raise ValueError(
+            f"{field_name} must be an opaque token of up to 255 characters "
+            "using letters, digits, '.', '_', ':', or '-' and must not expose a "
+            "storage location"
+        )
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -41,12 +84,12 @@ class IaCSnapshot:
         if not self.files:
             raise ValueError("files must contain at least one path")
         for path in self.files:
-            require_non_empty_string(path, "files entry")
+            _require_repository_path(path, "files entry")
         if len(set(self.files)) != len(self.files):
             raise ValueError("files must not repeat a path")
         if list(self.files) != sorted(self.files):
             raise ValueError("files must be sorted for reproducibility")
-        require_non_empty_string(self.snapshot_ref, "snapshot_ref")
+        _require_snapshot_ref(self.snapshot_ref, "snapshot_ref")
 
     def to_dict(self) -> dict[str, object]:
         """Return the complete IaCSnapshot wire shape."""
@@ -79,7 +122,7 @@ class IaCSnapshotSources:
         if not self.sources:
             raise ValueError("sources must contain at least one file")
         for path, text in self.sources.items():
-            require_non_empty_string(path, "sources path")
+            _require_repository_path(path, "sources path")
             if not isinstance(text, str):
                 raise TypeError("sources text must be a string")
         object.__setattr__(self, "sources", MappingProxyType(dict(self.sources)))

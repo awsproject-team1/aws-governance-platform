@@ -7,6 +7,12 @@ import unittest
 import tools.github.errors as github_errors
 import tools.github.ports as github_ports
 import tools.github.snapshot as github_snapshot
+from packages.contracts import (
+    IaCSnapshot,
+    IaCSnapshotPayloadError,
+    IaCSnapshotSources,
+    decode_iac_snapshot_sources,
+)
 from tools.github import (
     ApprovedRepository,
     GitHubToolError,
@@ -137,6 +143,63 @@ class ReadOnlyToolBoundaryTest(unittest.TestCase):
             with self.subTest(failure=failure.__name__):
                 self.assertFalse(hasattr(failure, "evaluation_status"))
                 self.assertFalse(hasattr(failure, "severity"))
+
+    def test_captured_paths_cannot_escape_a_consumer_work_tree(self) -> None:
+        escaping = (
+            "../../../../home/user/.ssh/id_rsa.tf",
+            "/etc/terraform/main.tf",
+            "..\\..\\windows\\system.tf",
+            "C:/terraform/main.tf",
+        )
+
+        for path in escaping:
+            with self.subTest(path=path):
+                with self.assertRaises(ValueError):
+                    IaCSnapshot(
+                        repository_id="repo-001",
+                        commit_sha=_COMMIT,
+                        files=(path,),
+                        snapshot_ref="snapshot-ref-001",
+                    )
+                with self.assertRaises(ValueError):
+                    IaCSnapshotSources(
+                        repository_id="repo-001",
+                        commit_sha=_COMMIT,
+                        sources={path: "resource {}"},
+                    )
+
+    def test_stored_payload_cannot_reintroduce_an_escaping_path(self) -> None:
+        tampered = (
+            b'{"repository_id": "repo-001", "commit_sha": "'
+            + _COMMIT.encode("ascii")
+            + b'", "sources": {"../../../.ssh/id_rsa.tf": "resource {}"}}'
+        )
+
+        with self.assertRaises(IaCSnapshotPayloadError):
+            decode_iac_snapshot_sources(tampered)
+
+    def test_snapshot_reference_cannot_leak_a_storage_location(self) -> None:
+        for snapshot_ref in (
+            "s3://prod-governance-artifacts/customers/acme/snap.json",
+            "customers/acme/snapshots/001",
+            "https://bucket.s3.amazonaws.com/key",
+        ):
+            with self.subTest(snapshot_ref=snapshot_ref):
+                with self.assertRaises(ValueError):
+                    IaCSnapshot(
+                        repository_id="repo-001",
+                        commit_sha=_COMMIT,
+                        files=("main.tf",),
+                        snapshot_ref=snapshot_ref,
+                    )
+
+    def test_capture_limits_bound_untrusted_repository_input(self) -> None:
+        self.assertGreater(github_snapshot.MAX_TERRAFORM_FILES, 0)
+        self.assertGreater(github_snapshot.MAX_TERRAFORM_FILE_BYTES, 0)
+        self.assertGreaterEqual(
+            github_snapshot.MAX_SNAPSHOT_PAYLOAD_BYTES,
+            github_snapshot.MAX_TERRAFORM_FILE_BYTES,
+        )
 
     def test_snapshot_metadata_never_carries_terraform_source_text(self) -> None:
         artifacts = RecordingArtifacts()
