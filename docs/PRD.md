@@ -25,7 +25,7 @@ Provider Expert Assistance는 Policy Mapping과 Rule/Finding/Remediation 방향 
 
 ## 사용자와 Role
 
-하나의 React Application과 Cognito User Pool을 사용하고 Backend가 JWT Group/Role을 검증한다.
+하나의 React Application과 Cognito User Pool을 사용한다. API Gateway가 Cognito Access Token을 검증한 뒤 Backend가 검증된 Group/Role로 action별 RBAC를 적용한다.
 
 - `Admin`: User 기능, Policy Source/Rule/Policy Profile 관리, GitHub 연결, 사용자·권한 및 배포·감사 설정 관리
 - `User`: Policy Q&A, IaC Assessment 요청, Finding/Report 확인, Remediation 요청, 평가 이력 조회

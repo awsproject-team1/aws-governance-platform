@@ -81,9 +81,10 @@ python -m ruff check .
 python -m ruff format --check .
 python -m unittest discover --start-directory tests/unit --pattern "test_*.py" --verbose
 python -m unittest discover --start-directory tests/contract --pattern "test_*.py" --verbose
+python -m unittest discover --start-directory tests/security --pattern "test_*.py" --verbose
 ```
 
-Python CI는 동일한 명령을 실행하며, 모든 Pull Request에는 별도 Secret Scan이 실행됩니다. Contract discovery는 Job polling, Assessment acceptance/phase, public error envelope의 실행 가능한 최소 Transport Contract를 검증합니다. 제품 Lambda Handler, 인증, API Gateway Event/Response Adapter, persistence 또는 AWS Resource는 선택하지 않습니다.
+Python CI는 동일한 명령을 실행하며, 모든 Pull Request에는 별도 Secret Scan이 실행됩니다. Contract discovery는 Job polling, Assessment acceptance/phase, public error envelope의 실행 가능한 최소 Transport Contract를 검증합니다. Security discovery는 Cognito Access Token claim과 action별 RBAC의 fail-closed 경계를 검증합니다. 제품 Lambda Handler, API Gateway Event/Response Adapter, persistence 또는 AWS Resource는 선택하지 않습니다.
 
 ## Backend Lambda Bootstrap
 

@@ -4,7 +4,9 @@
 
 ## 공통 원칙
 
-- Browser 요청은 Cognito JWT로 인증하고 Backend가 action별 RBAC를 검증한다.
+- Browser 요청은 Cognito Access Token으로 인증한다. API Gateway HTTP API JWT Authorizer가 Token을 검증하고 Backend가 검증된 claim의 목적·identity와 action별 RBAC를 다시 확인한다.
+- Product Role은 `cognito:groups`의 정확한 `Admin`, `User` 값만 사용하며 Request Body나 Frontend 상태에서 Role을 받지 않는다. `Admin`은 User 기능을 포함한다.
+- 현재 실행 가능한 권한 정본은 `START_ASSESSMENT`(`POST /assessments`)와 `READ_JOB`(`GET /jobs/{job_id}`)이며 Admin/User 모두 허용한다. 다른 Endpoint의 Action/Role Matrix는 Open Decision이고 등록 전까지 허용하지 않는다.
 - 명시적인 Assessment/Remediation UI는 전용 API를 호출하며 자연어 Router를 거치지 않는다.
 - 장시간 Workflow는 `202 Accepted + job_id`를 반환하고 `GET /jobs/{job_id}` Polling으로 추적한다.
 - Job API는 진행 상태와 연결 ID만 반환한다. 실제 결과는 Domain API로 조회한다.
@@ -29,7 +31,7 @@
 | `POST` | `/deployments/{deployment_id}/approval` | Apply 승인 또는 거절 | Async resume/terminate | Deployment |
 | `GET` | `/jobs/{job_id}` | Workflow 진행 상태 Polling | Sync | Job, Error |
 
-모든 Endpoint는 인증 대상이다. Admin/User의 세부 허용 Matrix는 구현 전에 확정하며 Frontend 표시만으로 권한을 허용하지 않는다.
+모든 Endpoint는 인증 대상이다. 현재 확정된 `POST /assessments`와 `GET /jobs/{job_id}` 외 Endpoint의 Admin/User 허용 Matrix는 Open Decision이며, Backend Action Policy에 등록되기 전까지 허용하지 않는다. Frontend 표시만으로 권한을 허용하지 않는다.
 
 ## Chat
 

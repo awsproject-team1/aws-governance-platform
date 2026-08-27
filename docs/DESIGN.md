@@ -40,7 +40,7 @@ Frontend의 역할은 사용자 입력, 명시적 기능 선택, Job Polling, �
 
 API Gateway + Lambda 중심의 서버리스 Backend를 사용한다. Backend의 책임은 다음과 같다.
 
-- Cognito JWT 검증과 Admin/User RBAC
+- API Gateway JWT Authorizer가 검증한 Cognito claim의 목적·필수 identity 확인과 action별 Admin/User RBAC
 - Request/Response/Error Contract 적용
 - Repository/Profile/Scope 등 명시적 Context 검증
 - Job 생성·조회·상태 전이
@@ -60,7 +60,11 @@ Backend Runtime의 직접 Dependency는 `apps/backend/requirements.txt`에 정�
 
 ## Cognito
 
-Admin과 User는 동일 Cognito User Pool과 로그인 화면을 사용한다. Backend는 JWT Group/Role을 검증한다. 사용자 초대와 MFA를 포함한 구체 운영 설정은 구현 전에 확정해야 한다.
+Admin과 User는 동일 Cognito User Pool과 로그인 화면을 사용한다. API Gateway HTTP API JWT Authorizer가 서명, issuer, token 시간 유효성과 구성된 audience/client binding을 검증한 뒤 Backend를 호출한다. 실제 User Pool, App Client, issuer, audience와 Route/Scope 배포 설정은 Infrastructure 구현 전에 확정해야 한다.
+
+Backend는 Authorizer가 검증한 claim에서 `token_use == "access"`, 비어 있지 않은 `sub`와 `client_id`, `cognito:groups`를 다시 확인한다. Group 이름은 정확히 `Admin`과 `User`만 Product Role로 해석하고, Request Body나 임의 Custom Claim의 Role은 사용하지 않는다. `Admin`은 User 기능을 포함한다. 현재 Action 정본은 `START_ASSESSMENT`와 `READ_JOB`이며 두 Role 모두 허용한다. 등록되지 않은 Action, 잘못된 Token 용도, 유효한 Product Role이 없는 Principal은 거부한다.
+
+Auth 모듈은 API Gateway event shape와 분리하고 cryptographic JWT 검증이나 JWKS 조회를 반복하지 않는다. 실제 event claim 추출과 HTTP 오류 변환은 Product Handler Contract에서 Fixture로 확정한다. 상세 결정은 [ADR 0004](decisions/0004-cognito-jwt-rbac-boundary.md)를 따른다. 사용자 초대, MFA, Token revocation, Scope와 나머지 Endpoint Role Matrix는 Open Decision이다.
 
 ## LangGraph와 Agent Runtime
 
