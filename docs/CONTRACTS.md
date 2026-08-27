@@ -124,6 +124,29 @@ Rule ID 형식은 [NAMING.md](NAMING.md)를 따른다. 하나의 Rule이 여러 
 
 `snapshot_ref`의 구체 Artifact Key 형식, Bucket 노출 방식, 기준 branch/base ref 필드는 여전히 Open Decision이다. Tool 실행 오류는 `tools/github/errors.py`의 `GitHubToolError` 계층으로만 표현하며 Governance `FAIL`로 변환하지 않는다.
 
+### IaCSnapshotSources
+
+- Purpose: 하나의 IaCSnapshot에 대응하는 Terraform 원문 Artifact Payload
+- Producer: GitHub Repository Tool
+- Consumer: Terraform Analyzer, Assessment, Remediation
+- Required: `repository_id`, `commit_sha`, `sources`
+- 실행 정본: `packages/contracts/iac_snapshots.py`의 `IaCSnapshotSources`와 `decode_iac_snapshot_sources`
+
+`IaCSnapshot`은 메타데이터만 전달하므로 Consumer는 `snapshot_ref`로 Artifact를 읽어 원문을 얻는다. 읽기 경로는 다음과 같다.
+
+- Read Port: `tools/github/ports.py`의 `SnapshotArtifactReader.get_snapshot(snapshot_ref)`
+- Read 함수: `tools/github/snapshot.py`의 `read_iac_snapshot_sources(snapshot, reader)`
+
+`SnapshotArtifactReader`는 읽기 연산만 노출하며 Snapshot을 교체할 수 없다. 쓰기는 Producer만 사용하는 `SnapshotArtifactStore.put_snapshot`으로 분리한다.
+
+Payload 검증은 다음과 같이 고정한다.
+
+- Payload는 `repository_id`, `commit_sha`, `sources` 세 필드만 갖는 UTF-8 JSON이다.
+- 동일 입력은 동일 byte를 만든다.
+- `sources`는 경로에서 원문 문자열로 가는 Read-Only Mapping이다.
+- 읽은 Payload의 `repository_id`, `commit_sha`, 정렬된 경로 집합이 `IaCSnapshot`과 일치해야 한다. 불일치는 `SnapshotMismatchError`이며 Governance 판정이 아니다.
+- 저장된 Payload를 읽을 수 없으면 `SnapshotNotFoundError`이며 Governance 판정이 아니다.
+
 ## Assessment
 
 - Purpose: Initial/Pre/Post Governance 평가 실행 1회의 Header/Metadata

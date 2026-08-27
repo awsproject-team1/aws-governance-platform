@@ -1,6 +1,7 @@
 """Security boundary tests for the read-only GitHub Repository Tool."""
 
 import inspect
+import json
 import unittest
 
 import tools.github.errors as github_errors
@@ -32,6 +33,11 @@ class RejectingApprovals:
         return None
 
 
+class AcceptingApprovals:
+    def find(self, repository_id: str) -> ApprovedRepository | None:
+        return _APPROVED
+
+
 class RecordingContents:
     def __init__(self) -> None:
         self.calls: list[str] = []
@@ -56,12 +62,29 @@ class RecordingArtifacts:
 
 class ReadOnlyToolBoundaryTest(unittest.TestCase):
     def test_content_ports_expose_no_write_operations(self) -> None:
-        for protocol in (github_ports.RepositoryContentSource, github_ports.ApprovalRegistry):
+        read_only_ports = (
+            github_ports.RepositoryContentSource,
+            github_ports.ApprovalRegistry,
+            github_ports.SnapshotArtifactReader,
+        )
+        for protocol in read_only_ports:
             operations = [name for name in vars(protocol) if not name.startswith("_")]
             with self.subTest(protocol=protocol.__name__):
                 for operation in operations:
                     for term in _WRITE_TERMS:
                         self.assertNotIn(term, operation.lower())
+
+    def test_snapshot_reader_port_cannot_replace_a_captured_snapshot(self) -> None:
+        reader_operations = {
+            name for name in vars(github_ports.SnapshotArtifactReader) if not name.startswith("_")
+        }
+        writer_operations = {
+            name for name in vars(github_ports.SnapshotArtifactStore) if not name.startswith("_")
+        }
+
+        self.assertEqual(reader_operations, {"get_snapshot"})
+        self.assertEqual(writer_operations, {"put_snapshot"})
+        self.assertEqual(reader_operations & writer_operations, set())
 
     def test_snapshot_module_does_not_reference_apply_or_merge(self) -> None:
         source = inspect.getsource(github_snapshot).lower()
@@ -107,11 +130,26 @@ class ReadOnlyToolBoundaryTest(unittest.TestCase):
             github_errors.InstallationAccessError,
             github_errors.NoTerraformFilesError,
             github_errors.RepositoryNotApprovedError,
+            github_errors.SnapshotMismatchError,
+            github_errors.SnapshotNotFoundError,
             github_errors.SnapshotStorageError,
         ):
             with self.subTest(failure=failure.__name__):
                 self.assertFalse(hasattr(failure, "evaluation_status"))
                 self.assertFalse(hasattr(failure, "severity"))
+
+    def test_snapshot_metadata_never_carries_terraform_source_text(self) -> None:
+        artifacts = RecordingArtifacts()
+        snapshot = build_iac_snapshot(
+            repository_id="repo-001",
+            commit_sha=_COMMIT,
+            approvals=AcceptingApprovals(),
+            contents=RecordingContents(),
+            artifacts=artifacts,
+        )
+
+        self.assertNotIn("resource {}", json.dumps(snapshot.to_dict()))
+        self.assertEqual(artifacts.calls, ["put_snapshot"])
 
 
 if __name__ == "__main__":

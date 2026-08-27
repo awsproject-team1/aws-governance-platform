@@ -1,20 +1,27 @@
 """Read-only IaCSnapshot construction for approved customer Repositories."""
 
-import json
 import re
 
-from packages.contracts import IaCSnapshot
+from packages.contracts import (
+    IaCSnapshot,
+    IaCSnapshotPayloadError,
+    IaCSnapshotSources,
+    decode_iac_snapshot_sources,
+)
 from tools.github.errors import (
     CommitNotFoundError,
     GitHubToolError,
     InstallationAccessError,
     NoTerraformFilesError,
     RepositoryNotApprovedError,
+    SnapshotMismatchError,
+    SnapshotNotFoundError,
     SnapshotStorageError,
 )
 from tools.github.ports import (
     ApprovalRegistry,
     RepositoryContentSource,
+    SnapshotArtifactReader,
     SnapshotArtifactStore,
 )
 
@@ -70,18 +77,14 @@ def build_iac_snapshot(
         except Exception as error:
             raise InstallationAccessError("Repository content read failed") from error
 
-    payload = json.dumps(
-        {
-            "repository_id": repository.repository_id,
-            "commit_sha": commit_sha,
-            "sources": sources,
-        },
-        ensure_ascii=False,
-        sort_keys=True,
-    ).encode("utf-8")
+    captured = IaCSnapshotSources(
+        repository_id=repository.repository_id,
+        commit_sha=commit_sha,
+        sources=sources,
+    )
 
     try:
-        snapshot_ref = artifacts.put_snapshot(payload)
+        snapshot_ref = artifacts.put_snapshot(captured.to_payload_bytes())
     except GitHubToolError:
         raise
     except Exception as error:
@@ -96,3 +99,39 @@ def build_iac_snapshot(
         files=terraform_paths,
         snapshot_ref=snapshot_ref,
     )
+
+
+def read_iac_snapshot_sources(
+    *,
+    snapshot: IaCSnapshot,
+    reader: SnapshotArtifactReader,
+) -> IaCSnapshotSources:
+    """Load the Terraform source text captured for one IaCSnapshot.
+
+    The stored payload must describe the same Repository, commit, and paths as
+    the snapshot metadata. A mismatch is a Tool failure, never a Governance
+    result, so consumers cannot analyse text from a different capture.
+    """
+    if not isinstance(snapshot, IaCSnapshot):
+        raise SnapshotMismatchError("snapshot must be an IaCSnapshot")
+
+    try:
+        payload = reader.get_snapshot(snapshot.snapshot_ref)
+    except GitHubToolError:
+        raise
+    except Exception as error:
+        raise SnapshotNotFoundError("stored snapshot could not be read") from error
+
+    try:
+        captured = decode_iac_snapshot_sources(payload)
+    except IaCSnapshotPayloadError as error:
+        raise SnapshotMismatchError("stored snapshot payload is not usable") from error
+
+    if captured.repository_id != snapshot.repository_id:
+        raise SnapshotMismatchError("stored snapshot belongs to a different Repository")
+    if captured.commit_sha != snapshot.commit_sha:
+        raise SnapshotMismatchError("stored snapshot belongs to a different commit")
+    if captured.paths != snapshot.files:
+        raise SnapshotMismatchError("stored snapshot paths do not match the snapshot metadata")
+
+    return captured

@@ -48,3 +48,15 @@ class SnapshotArtifactStore(Protocol):
     def put_snapshot(self, content: bytes) -> str:
         """Store snapshot bytes immutably and return an opaque reference."""
         ...
+
+
+class SnapshotArtifactReader(Protocol):
+    """Read-only access to captured Terraform source text.
+
+    Consumers that analyse Terraform receive this port instead of the writer so
+    they cannot replace a captured snapshot.
+    """
+
+    def get_snapshot(self, snapshot_ref: str) -> bytes:
+        """Return the stored snapshot bytes for one opaque reference."""
+        ...

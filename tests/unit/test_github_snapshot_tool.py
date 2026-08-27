@@ -3,15 +3,19 @@
 import json
 import unittest
 
+from packages.contracts import IaCSnapshot, IaCSnapshotSources
 from tools.github import (
     ApprovedRepository,
     CommitNotFoundError,
     InstallationAccessError,
     NoTerraformFilesError,
     RepositoryNotApprovedError,
+    SnapshotMismatchError,
+    SnapshotNotFoundError,
     SnapshotStorageError,
     build_iac_snapshot,
     is_terraform_path,
+    read_iac_snapshot_sources,
 )
 
 _COMMIT = "b" * 40
@@ -221,6 +225,108 @@ class BuildIaCSnapshotTest(unittest.TestCase):
             )
 
         self.assertEqual(first.stored, second.stored)
+
+
+class StubReader:
+    def __init__(self, *, payload: bytes = b"", error: Exception | None = None) -> None:
+        self._payload = payload
+        self._error = error
+        self.requested: list[str] = []
+
+    def get_snapshot(self, snapshot_ref: str) -> bytes:
+        self.requested.append(snapshot_ref)
+        if self._error is not None:
+            raise self._error
+        return self._payload
+
+
+def _snapshot(*, files: tuple[str, ...] = ("main.tf",)) -> IaCSnapshot:
+    return IaCSnapshot(
+        repository_id="repo-001",
+        commit_sha=_COMMIT,
+        files=files,
+        snapshot_ref="snapshot-ref-001",
+    )
+
+
+def _payload(
+    *,
+    repository_id: str = "repo-001",
+    commit_sha: str = _COMMIT,
+    sources: dict[str, str] | None = None,
+) -> bytes:
+    return IaCSnapshotSources(
+        repository_id=repository_id,
+        commit_sha=commit_sha,
+        sources=sources or {"main.tf": "resource {}"},
+    ).to_payload_bytes()
+
+
+class ReadIaCSnapshotSourcesTest(unittest.TestCase):
+    def test_consumer_loads_captured_terraform_text_for_a_snapshot(self) -> None:
+        reader = StubReader(payload=_payload(sources={"main.tf": "resource {}"}))
+
+        captured = read_iac_snapshot_sources(snapshot=_snapshot(), reader=reader)
+
+        self.assertEqual(reader.requested, ["snapshot-ref-001"])
+        self.assertEqual(dict(captured.sources), {"main.tf": "resource {}"})
+
+    def test_build_output_can_be_read_back_by_a_consumer(self) -> None:
+        artifacts = StubArtifacts()
+        snapshot = build_iac_snapshot(
+            repository_id="repo-001",
+            commit_sha=_COMMIT,
+            approvals=StubApprovals(_APPROVED),
+            contents=StubContents(
+                paths=("modules/s3/main.tf", "main.tf"),
+                sources={"main.tf": "resource {}", "modules/s3/main.tf": "module {}"},
+            ),
+            artifacts=artifacts,
+        )
+
+        captured = read_iac_snapshot_sources(
+            snapshot=snapshot,
+            reader=StubReader(payload=artifacts.stored[0]),
+        )
+
+        self.assertEqual(captured.paths, snapshot.files)
+        self.assertEqual(captured.commit_sha, snapshot.commit_sha)
+
+    def test_missing_stored_snapshot_surfaces_as_a_tool_error(self) -> None:
+        with self.assertRaisesRegex(SnapshotNotFoundError, "could not be read"):
+            read_iac_snapshot_sources(
+                snapshot=_snapshot(),
+                reader=StubReader(error=KeyError("absent")),
+            )
+
+    def test_unusable_stored_payload_surfaces_as_a_tool_error(self) -> None:
+        with self.assertRaisesRegex(SnapshotMismatchError, "not usable"):
+            read_iac_snapshot_sources(
+                snapshot=_snapshot(),
+                reader=StubReader(payload=b"{"),
+            )
+
+    def test_payload_from_another_capture_is_rejected(self) -> None:
+        cases = (
+            (_payload(repository_id="repo-002"), "different Repository"),
+            (_payload(commit_sha="d" * 40), "different commit"),
+            (_payload(sources={"other.tf": "resource {}"}), "paths do not match"),
+        )
+
+        for payload, expected in cases:
+            with self.subTest(expected=expected):
+                with self.assertRaisesRegex(SnapshotMismatchError, expected):
+                    read_iac_snapshot_sources(
+                        snapshot=_snapshot(),
+                        reader=StubReader(payload=payload),
+                    )
+
+    def test_snapshot_argument_must_be_a_contract_instance(self) -> None:
+        with self.assertRaisesRegex(SnapshotMismatchError, "must be an IaCSnapshot"):
+            read_iac_snapshot_sources(
+                snapshot={"snapshot_ref": "snapshot-ref-001"},
+                reader=StubReader(payload=_payload()),
+            )
 
 
 if __name__ == "__main__":

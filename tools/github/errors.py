@@ -27,3 +27,11 @@ class NoTerraformFilesError(GitHubToolError):
 
 class SnapshotStorageError(GitHubToolError):
     """Raised when Terraform source text could not be preserved."""
+
+
+class SnapshotNotFoundError(GitHubToolError):
+    """Raised when a snapshot reference has no stored Terraform source text."""
+
+
+class SnapshotMismatchError(GitHubToolError):
+    """Raised when stored Terraform source text does not match its snapshot."""

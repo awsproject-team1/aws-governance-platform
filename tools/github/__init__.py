@@ -11,15 +11,22 @@ from tools.github.errors import (
     InstallationAccessError,
     NoTerraformFilesError,
     RepositoryNotApprovedError,
+    SnapshotMismatchError,
+    SnapshotNotFoundError,
     SnapshotStorageError,
 )
 from tools.github.ports import (
     ApprovalRegistry,
     ApprovedRepository,
     RepositoryContentSource,
+    SnapshotArtifactReader,
     SnapshotArtifactStore,
 )
-from tools.github.snapshot import build_iac_snapshot, is_terraform_path
+from tools.github.snapshot import (
+    build_iac_snapshot,
+    is_terraform_path,
+    read_iac_snapshot_sources,
+)
 
 __all__ = [
     "ApprovalRegistry",
@@ -30,8 +37,12 @@ __all__ = [
     "NoTerraformFilesError",
     "RepositoryContentSource",
     "RepositoryNotApprovedError",
+    "SnapshotArtifactReader",
     "SnapshotArtifactStore",
+    "SnapshotMismatchError",
+    "SnapshotNotFoundError",
     "SnapshotStorageError",
     "build_iac_snapshot",
     "is_terraform_path",
+    "read_iac_snapshot_sources",
 ]

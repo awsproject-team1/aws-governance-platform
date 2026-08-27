@@ -2,7 +2,12 @@
 
 from packages.contracts.assessments import AssessmentAcceptedResponse, AssessmentPhase
 from packages.contracts.errors import ApiError, ApiErrorResponse
-from packages.contracts.iac_snapshots import IaCSnapshot
+from packages.contracts.iac_snapshots import (
+    IaCSnapshot,
+    IaCSnapshotPayloadError,
+    IaCSnapshotSources,
+    decode_iac_snapshot_sources,
+)
 from packages.contracts.jobs import JobCurrentStep, JobResponse, JobStatus
 
 __all__ = [
@@ -11,7 +16,10 @@ __all__ = [
     "AssessmentAcceptedResponse",
     "AssessmentPhase",
     "IaCSnapshot",
+    "IaCSnapshotPayloadError",
+    "IaCSnapshotSources",
     "JobCurrentStep",
     "JobResponse",
     "JobStatus",
+    "decode_iac_snapshot_sources",
 ]
