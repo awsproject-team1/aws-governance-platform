@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>사내 위키 Export Fixture</title>
+  <link rel="stylesheet" href="https://wiki.example.com/theme.css">
+  <script>window.__wikiTelemetry = "이 문자열은 추출되면 안 된다";</script>
+</head>
+<body>
+  <div class="wiki-content">
+    <h1>클라우드 접근 통제 지침</h1>
+    <p>이 문서는 사내 위키 Export를 Ingestion이 그대로 다룰 수 있는지 확인하는 Fixture다.</p>
+
+    <h2>공통</h2>
+    <p>모든 계정은 최소 권한 원칙을 따른다. 근거는
+      <a href="https://wiki.example.com/policy/least-privilege">최소 권한 원칙</a>을 참고한다.</p>
+    <ul>
+      <li>공용 계정을 만들지 않는다.
+        <ul>
+          <li>예외는 정보보안팀 승인 기록이 있어야 한다.</li>
+          <li>승인 기록은 1년간 보관한다.</li>
+        </ul>
+      </li>
+      <li>장기 Access Key 대신 임시 자격증명을 사용한다.</li>
+    </ul>
+    <iframe src="https://wiki.example.com/embed/dashboard"></iframe>
+
+    <h2>책임 매트릭스</h2>
+    <table>
+      <tr><th>구분</th><th>정보보안팀</th><th>서비스팀</th></tr>
+      <tr><td rowspan="2">접근 권한</td><td>정책 수립</td><td>요청 및 회수</td></tr>
+      <tr><td colspan="2">분기 1회 공동 점검</td></tr>
+    </table>
+
+    <h2>공통</h2>
+    <p>같은 제목이 문서 안에서 반복되는 경우를 의도적으로 포함한다.</p>
+    <p>문의: <a href="javascript:alert('xss')">여기</a> 대신 정보보안팀 메일을 사용한다.</p>
+  </div>
+</body>
+</html>

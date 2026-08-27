@@ -133,7 +133,13 @@ class IaCSnapshotSources:
         return tuple(sorted(self.sources))
 
     def to_payload_bytes(self) -> bytes:
-        """Return the deterministic artifact payload for this captured text."""
+        """Return the deterministic artifact payload for this captured text.
+
+        The encoding matches the repository's canonical JSON form so a future
+        shared helper can hash this payload without changing stored bytes. The
+        payload intentionally contains no JSON array, because ``sort_keys`` only
+        orders object keys and would leave array order unnormalized.
+        """
         return json.dumps(
             {
                 "repository_id": self.repository_id,
@@ -142,6 +148,7 @@ class IaCSnapshotSources:
             },
             ensure_ascii=False,
             sort_keys=True,
+            separators=(",", ":"),
         ).encode("utf-8")
 
 

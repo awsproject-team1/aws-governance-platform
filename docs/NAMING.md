@@ -39,6 +39,15 @@ docs/update-contracts
 chore/bootstrap-repository
 ```
 
+Platform Repository의 branch와 PR 경로는 다음과 같이 고정한다.
+
+- short-lived 작업 branch: `feature/*`, `fix/*`, `docs/*`, `refactor/*`, `test/*`, `chore/*`
+- 일반 PR: short-lived 작업 branch → `dev`
+- 안정화 통합 PR: 같은 Repository의 `dev` → `main`
+- 금지: short-lived 작업 branch → `main`, `main`/`dev` direct push, force push, 보호 규칙 bypass
+
+PR의 head/base 조합을 확인하는 Required Check 이름은 `validate-pr-source`를 사용한다. GitHub Workflow/Job 전체 Naming은 별도 Open Decision이지만, Ruleset에 연결되는 이 check 이름은 보호 설정과 문서에서 동일하게 유지한다.
+
 Remediation이 고객 IaC Repository에 만드는 Branch의 현재 설계 예시는 다음과 같다.
 
 ```text
@@ -158,6 +167,20 @@ cloudtrail.trail.enabled
 
 Control Key는 향후 Control Registry가 소유한다. 위 값은 Shared Contract와 Registry review 전까지 실제 key로 예약되지 않는다. 전체 조합 규칙, 약어 목록, rename/version 정책은 아직 확정되지 않았다.
 
+## Source 결과 표시 이름
+
+내부 산식의 Source별 결과는 다음 표시 이름을 사용한다.
+
+- `FSBP 기반 Governance Score`
+- `CIS 기반 Governance Score`
+- `AWS Resource Tagging Score`
+- `Customer Policy Score`
+- `Source별 Evaluation Coverage`
+- `ISMS-P Mapping Coverage`
+- `ISMS-P Evidence Readiness`
+
+공식 산식과 동일한 구현이 아니므로 `AWS Security Hub Score`, `공식 FSBP Score`, `공식 CIS Score`, `ISMS-P Compliance Score`, `ISMS-P 인증 점수`는 사용하지 않는다. Core/Foundational/Hygiene/Control Tower Profile 이름은 개념적 설명이며 production Profile ID와 이름은 계속 Open Decision이다.
+
 ## Domain ID와 API Field
 
 Domain ID와 API Field Naming은 [CONTRACTS.md](CONTRACTS.md)와 `packages/contracts/`를 따른다. 문서 예시에는 `job-001`, `asm-001`, `ar-001`, `fd-001`, `rem-001`, `dep-001`이 사용되지만 생성 알고리즘과 prefix 강제 여부는 확정되지 않았다.
@@ -168,6 +191,8 @@ API JSON 예시는 `snake_case`를 사용하고 있으나 모든 외부/내부 S
 
 - Platform Repository와 Customer IaC Repository는 별도 Naming과 Lifecycle을 가진다.
 - 일반 개발 branch는 `type/kebab-case`를 따른다.
+- Platform Repository의 일반 PR base는 `dev`이며 `main` 대상 PR의 유일한 허용 head는 같은 Repository의 `dev`다.
+- Platform Repository의 source 검증 Required Check는 `validate-pr-source`다.
 - Customer Remediation branch는 현재 설계 예시 `feature/governance-remediation-<id>`를 사용한다.
 - GitHub Actions Workflow, Environment, OIDC Role/Subject Naming은 Open Decision이다.
 

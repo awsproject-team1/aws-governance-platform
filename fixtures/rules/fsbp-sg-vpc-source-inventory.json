@@ -1,0 +1,30 @@
+{
+  "artifact_kind": "official-source-inventory-not-rule-candidates",
+  "candidate_creation_allowed": false,
+  "blockers": [
+    "Area C has not accepted the evaluator binding and fact representation for these controls.",
+    "No server-owned Frozen Source Reference, reviewed scope, and approved Rule version exists for these controls yet."
+  ],
+  "official_reference_url": "https://docs.aws.amazon.com/securityhub/latest/userguide/fsbp-standard.html",
+  "framework_version": "1.0.0",
+  "observed_at": "2026-08-26",
+  "security_group_source_inventory": [
+    {"control_id": "EC2.2", "title": "VPC default security groups should not allow inbound or outbound traffic"},
+    {"control_id": "EC2.18", "title": "Security groups should only allow unrestricted incoming traffic for authorized ports"},
+    {"control_id": "EC2.19", "title": "Security groups should not allow unrestricted access to ports with high risk"}
+  ],
+  "vpc_source_inventory": [
+    {"control_id": "EC2.6", "title": "VPC flow logging should be enabled in all VPCs"},
+    {"control_id": "EC2.21", "title": "Network ACLs should not allow ingress from 0.0.0.0/0 to port 22 or port 3389"}
+  ],
+  "fields_intentionally_absent_until_review": [
+    "rule_id",
+    "rule_version",
+    "status",
+    "severity",
+    "evaluation_type",
+    "requirement",
+    "threshold",
+    "exception"
+  ]
+}

@@ -104,9 +104,24 @@ Agent Runtime은 Policy Q&A, IaC 의미 비교, Remediation 생성 같은 추론
 
 고객 정책 원문을 S3에 저장하고 관리형 Retrieval 계층을 통해 관련 Chunk와 Source Metadata를 반환한다. 내부 Evidence가 없다는 상태와 Tool 실행 오류를 구분한다.
 
+현재 B 구현은 `tools/policy-knowledge/port.py`에 검증 경계와 Fixture Adapter만 둔다. 결과 Evidence의 Source ID/version/section/content hash를 Registry와 대조하며 실제 Retrieval 저장소와 Vendor는 확정하지 않는다.
+
+고객이 업로드하는 사내 규정은 서식이 고정되어 있지 않으므로 파일을 그대로 LLM에 넣지 않고 형식 지식을 Loader 한 곳에 가둔다. 경계는 `업로드 보안 검사 → Format별 Document Loader → Canonical Policy Document → 결정론적 Segmentation → Frozen Document → Knowledge Index`다.
+
+- `sources/upload.py`: 확장자 allowlist, 실제 signature 확인, Macro/암호화/압축폭탄 차단, 파일명 재생성. Parser에 검사되지 않은 바이트가 닿지 않게 한다.
+- `sources/loaders/`: MD/TXT, HTML, DOCX, 텍스트 PDF Loader와 XLSX Control Matrix Loader. HTML은 DOM 중첩 상한을 두어 깊게 중첩된 몇 KB짜리 파일이 `RecursionError`로 Loader를 죽이지 않고 `ExtractionError`가 되게 한다. DOCX/XLSX의 XML part는 `loaders/office_xml.py` 한 곳을 거치며, DTD/Entity 선언을 거부하기 전에 인코딩을 UTF-8로 고정한다. 원시 byte에서만 선언을 찾으면 UTF-16 part가 그대로 통과하기 때문이다. 형식별 위치 정보를 `locator`에 보존한다. PDF는 실제 객체를 열어 압축 Object Stream도 처리하며, 이미지 전용 페이지가 섞이면 부분 추출 대신 OCR 필요 상태로 실패한다. XLSX는 header와 데이터 행을 TABLE Block으로 만들고 수식을 실행하지 않은 채 수식 문자열과 캐시값을 함께 보존한다.
+- `sources/canonical_document.py`: 형식 비종속 Block 표현. 이후 단계는 어떤 형식에서 왔는지 몰라도 동작한다.
+- `sources/segmentation.py`: 교체 가능한 Structure Profile과 문서 비종속 정규화·해시.
+- `sources/ingestion.py`: `document_version` 단위 동결. Parser/Profile 정체성을 동결 기준에 포함해 Parser 변경이 조용한 근거 변경이 되지 않게 한다.
+- `sources/index.py`: 동결 항목만 담는 Knowledge Index. Policy Q&A가 업로드 문서를 원문 locator와 함께 답할 수 있게 한다.
+
+결정론적 Profile이 없는 문서는 Rule Candidate 경로를 지원하지 않으며 조용히 빈 결과를 내지 않고 명시적으로 실패한다. 텍스트 PDF는 글꼴 크기로 heading을 복원할 수 있을 때 `CanonicalHeadingProfile`을 사용한다. heading 구조를 복원할 수 없는 PDF는 다른 Structure Profile이 필요하다고 명시적으로 실패하며, 스캔 PDF는 빈 문서가 아니라 OCR 필요 상태로 분기한다. XLSX는 일반 문서 Profile로 흡수하지 않고 `XlsxControlMatrixProfile`이 데이터 행 단위로 동결한다. 숨김 시트·행·열과 병합·필터 상태는 데이터를 누락하는 조건으로 쓰지 않고 Review warning으로 보존한다.
+
 ### External Evidence Tool
 
 내부 Knowledge가 부족할 때 AWS 공식 문서와 허용된 공식 Governance Source를 검색한다. 외부 검색 실패가 기존 정책 판정을 자동으로 뒤집지 않는다. 구체 관리형 검색 구현은 가용성과 PoC 결과를 확인한다.
+
+현재 B 구현은 `tools/external-evidence/port.py`의 명시적 Source/identifier-prefix allowlist와 Fixture Adapter까지만 제공한다. 실제 네트워크 호출은 하지 않으며 `NOT_FOUND`와 Tool `ERROR`를 분리한다.
 
 ### GitHub Tool
 
@@ -135,6 +150,23 @@ Policy Source
 ```
 
 같은 Control의 여러 Source Rule은 독립 평가한다. `Resource × Rule`이 판정 정본이고 `Resource × Control`은 비교·표시 Grouping이다. Cross-Source 최종 Status/Severity/Overall Score를 자동 생성하지 않는다. 세부 계약은 [CONTRACTS.md](CONTRACTS.md)를 따른다.
+
+결정론적 B 구현은 `packages/governance/`의 Source/Control/Mapping/Rule/Profile Registry, 승인 content-hash binding, Phase filter, Source별 scoring으로 구성된다. Scoring은 Severity 가중치를 Effective Rule Set에서 직접 읽고 Consumer가 보낸 값과 다르면 거부하므로, 판정 전 가중치 고정 규칙이 신뢰 경계 밖 입력으로 우회되지 않는다. `packages/contracts/governance.py`는 B→C Rule/Evidence/Metric 형식만 검증하고 판정 로직을 포함하지 않는다. `apps/frontend/src/policy/PolicyGovernancePanel.jsx`는 공통 Router/Auth/API를 소유하지 않고 Props와 callback만 공개한다. Policy Agent 경계는 `agent/prompts/policy_agent.md`에 고정한다.
+
+Rule Candidate는 원문이나 LLM이 정체성을 만드는 경로가 아니다. Structured proposal은 의미 필드와 limitation만 내고, Domain Service가 서버 보유 Frozen section을 Source Reference로 결합한다. Rule ID와 승인자는 Area A의 인증/RBAC 및 서버 ID 할당 경계에서 들어오며 Domain이 version을 계산하고 exact semantic snapshot 승인과 ACTIVE 등록을 함께 수행한다. 승인 semantic hash에서 identity와 lifecycle status를 분리하고 승인 당시 ACTIVE snapshot을 별도로 보존해 DEPRECATED 뒤에도 과거 Profile/Effective Rule Set을 재현한다.
+
+Policy Source Registry와 Frozen Index는 `(source_id, source_version)`을 identity로 사용한다. 새 Assessment는 ACTIVE Rule만 선택하고, 과거 재현은 immutable approved snapshot을 사용한다. Scoring은 기존 `(resource_id, rule_id, rule_version, source_id)`를 입력 identity로 사용해 재전송 중복을 거부한다. 이 구현은 실제 PASS/FAIL 판정, Check Registry, Terraform/AWS Fact Schema를 소유하지 않는다.
+
+Global Source는 `packages/governance/sources/catalog.py`에서 두 단계로 관리한다.
+
+1. `GlobalSourceDefinition`: 공식 Publisher/Reference/version과 제품 역할을 검증한 catalog entry
+2. `FrozenGlobalSourceSnapshot`: 선택 Control, 제외 사유, canonical content hash, mapping version, control-set hash를 가진 평가 입력 snapshot
+
+Reference만 확인된 Source를 scored/evaluable로 승격하지 않는다. Snapshot 변경 비교는 추가/제외 Control과 content/mapping 변경을 보고하며 기존 snapshot을 덮어쓰지 않는다. FSBP만 기본 Source 후보이고 CIS/Tagging은 명시 선택, Control Tower는 Customer Capability 확인 후 선택, ISMS-P는 Profile이 아닌 Mapping View다.
+
+FSBP S3는 `sources/official_snapshot.py`에서 공식 문서 전문이 아닌 검토 가능한 metadata projection으로 동결한다. 관찰한 S3 Control Set 전체를 선택/제외로 분할하고 선택 Control evidence hash를 다시 계산한다. 기존 승인 Rule의 의미가 같더라도 Source Reference가 새 snapshot과 다르면 Rule을 변형하거나 자동 승인하지 않고 새 version과 Human Approval을 요구한다. SG/VPC는 `fixtures/rules/fsbp-sg-vpc-source-inventory.json`에 공식 Control inventory만 기록하며 B→C evaluator/fact 계약이 공동 승인되기 전에는 Rule Candidate로 승격하지 않는다.
+
+`packages/governance/compliance/readiness.py`는 ISMS-P 항목에서 Project Control → Rule pin → Evidence/Finding/Remediation 추적과 Mapping Coverage/Evidence 상태 분포를 만든다. Assessment PASS/FAIL과 Compliance Score는 만들지 않는다.
 
 ## Assessment
 

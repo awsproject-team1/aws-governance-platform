@@ -1,0 +1,68 @@
+{
+  "reporting_terms_only": true,
+  "global_source_scope": {
+    "reference_verified_source_ids": [
+      "aws-fsbp-1-0-0",
+      "cis-aws-foundations-5-0-0",
+      "aws-resource-tagging-1-0-0",
+      "aws-control-tower-controls",
+      "isms-p-2023-11-23"
+    ],
+    "official_snapshot_frozen_source_ids": [
+      "aws-fsbp-1-0-0"
+    ],
+    "scored_global_source_complete_ids": [],
+    "mapping_view_complete_source_ids": [],
+    "interpretation": "공식 Reference 확인은 Frozen Snapshot, 승인 Rule Pack, Assessment 실행 또는 Scored Source 완료를 의미하지 않는다."
+  },
+  "resources": [
+    {
+      "resource_group": "S3",
+      "defined_rule_ids": [
+        "CUSTOMER-S3-ENC-001@1",
+        "CUSTOMER-S3-PROC-001@1",
+        "CUSTOMER-S3-PAB-003@2",
+        "GLOBAL-S3-PAB-001@1"
+      ],
+      "governance_ready_rule_ids": [
+        "CUSTOMER-S3-ENC-001@1",
+        "CUSTOMER-S3-PROC-001@1",
+        "CUSTOMER-S3-PAB-003@2"
+      ],
+      "assessment_executable_rule_ids": [],
+      "remediation_deployable_rule_ids": []
+    },
+    {
+      "resource_group": "Security Group",
+      "defined_rule_ids": [],
+      "governance_ready_rule_ids": [],
+      "assessment_executable_rule_ids": [],
+      "remediation_deployable_rule_ids": [],
+      "blocker": "Official FSBP source inventory exists, but Frozen Source References, reviewed Rule scope, and the Area C execution contract are not approved."
+    },
+    {
+      "resource_group": "IAM Role/Policy",
+      "defined_rule_ids": [],
+      "governance_ready_rule_ids": [],
+      "assessment_executable_rule_ids": [],
+      "remediation_deployable_rule_ids": [],
+      "blocker": "승인된 Source Reference와 Area C/D 연결이 없다."
+    },
+    {
+      "resource_group": "CloudTrail",
+      "defined_rule_ids": [],
+      "governance_ready_rule_ids": [],
+      "assessment_executable_rule_ids": [],
+      "remediation_deployable_rule_ids": [],
+      "blocker": "승인된 Source Reference와 Area C/D 연결이 없다."
+    },
+    {
+      "resource_group": "VPC",
+      "defined_rule_ids": [],
+      "governance_ready_rule_ids": [],
+      "assessment_executable_rule_ids": [],
+      "remediation_deployable_rule_ids": [],
+      "blocker": "Official FSBP source inventory exists, but Frozen Source References, reviewed Rule scope, and the Area C execution contract are not approved."
+    }
+  ]
+}

@@ -1,6 +1,16 @@
 """Executable transport contracts shared across platform boundaries."""
 
-from packages.contracts.assessments import AssessmentAcceptedResponse, AssessmentPhase
+from packages.contracts.assessments import (
+    AssessmentAcceptedResponse,
+    AssessmentLinkageConfirmation,
+    AssessmentPhase,
+    AssessmentProgressAcknowledgement,
+    AssessmentProgressUpdate,
+    AssessmentStartAcknowledgement,
+    AssessmentStartCommand,
+    AssessmentStartStatus,
+    InitialAssessmentStartRequest,
+)
 from packages.contracts.errors import ApiError, ApiErrorResponse
 from packages.contracts.iac_snapshots import (
     IaCSnapshot,
@@ -14,10 +24,17 @@ __all__ = [
     "ApiError",
     "ApiErrorResponse",
     "AssessmentAcceptedResponse",
+    "AssessmentLinkageConfirmation",
     "AssessmentPhase",
+    "AssessmentProgressAcknowledgement",
+    "AssessmentProgressUpdate",
+    "AssessmentStartAcknowledgement",
+    "AssessmentStartCommand",
+    "AssessmentStartStatus",
     "IaCSnapshot",
     "IaCSnapshotPayloadError",
     "IaCSnapshotSources",
+    "InitialAssessmentStartRequest",
     "JobCurrentStep",
     "JobResponse",
     "JobStatus",

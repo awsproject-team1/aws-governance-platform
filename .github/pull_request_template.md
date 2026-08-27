@@ -9,9 +9,11 @@
 ## Related Issue
 
 - Parent: #
-- Refs Sub-issue: #
+- Related Sub-issue/Bug (아래 중 하나만 남김):
+  - Closes #
+  - Refs #
 
-Sub-issue는 `dev` Merge 확인 후 사람이 수동으로 닫습니다. 자동 종료용 `Closes`를 사용하지 않으며 Parent Issue를 PR에서 닫지 않습니다.
+모든 Acceptance Criteria를 충족하는 `dev` PR에는 `Closes #이슈번호`를 사용합니다. 일부 범위만 다루면 `Refs #이슈번호`를 사용하고 Issue를 열어 둡니다. Parent Issue는 PR에서 닫지 않습니다. Review와 Merge는 사람이 수행하며 Agent는 Issue close API를 호출하지 않습니다.
 
 ## PR Type
 
@@ -19,6 +21,12 @@ Sub-issue는 `dev` Merge 확인 후 사람이 수동으로 닫습니다. 자동 
 - [ ] Bug Fix → `dev`
 - [ ] Docs / Refactor / Chore → `dev`
 - [ ] Integration: `dev` → `main`
+
+## Base / Head 확인
+
+- 일반 작업: `작업 branch` → `dev`
+- 안정화 통합: 같은 Repository의 `dev` → `main`
+- `feature/*`, `fix/*`, `docs/*`, `refactor/*`, `test/*`, `chore/*` → `main` 직접 PR은 금지
 
 ## Changes
 
@@ -71,6 +79,10 @@ PR 전에 실행한 로컬 명령 또는 수동 확인 절차를 기록합니다
 - [ ] 관련 문서를 갱신함
 - [ ] Secret이 포함되지 않음
 - [ ] `dev` 최신 변경사항과 충돌 여부를 확인함
+- [ ] 일반 작업 PR의 base가 `dev`임
+- [ ] `main` 대상 PR이면 head가 같은 Repository의 `dev`임
+- [ ] Required Check와 Review 조건을 우회하지 않음
 - [ ] 다른 팀원 최소 1명의 Review를 받을 준비가 됨
 - [ ] Merge는 사람이 수행함
-- [ ] `dev` Merge 후 Sub-issue를 사람이 수동 종료함
+- [ ] 완료 가능한 Sub-issue/Bug에는 `Closes #번호`, 일부 범위에는 `Refs #번호`를 사용함
+- [ ] Parent Issue를 PR closing keyword로 참조하지 않음
