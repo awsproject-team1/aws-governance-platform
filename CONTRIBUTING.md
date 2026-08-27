@@ -141,15 +141,28 @@ Path Filter로 실행되지 않을 수 있는 Workflow를 그대로 Required Che
 
 ## Test와 CI
 
-GitHub Actions는 Path Filter로 변경 영역에 필요한 검사를 자동 선택하는 것을 원칙으로 합니다. 현재 실행 가능한 Workflow는 모든 PR의 Secret Scan과 Python 변경 경로의 Python Checks입니다.
+GitHub Actions는 Path Filter로 변경 영역에 필요한 검사를 자동 선택하는 것을 원칙으로 합니다. 현재 실행 가능한 Workflow는 모든 PR의 Secret Scan, Python 변경 경로의 Python Checks, Frontend 변경 경로의 Frontend Checks입니다.
 
 - 모든 PR: Secret Scan
-- Python 변경: Unit Test, Contract Test, Ruff Lint/Format
+- Python 변경: Unit Test, Contract Test, Integration Test, Ruff Lint/Format
+- Frontend 변경: Frontend Model Test
 - Terraform 변경(목표, 아직 Workflow 미구현): `terraform fmt -check`, `terraform validate`, TFLint, Checkov
-- Frontend 변경(목표, 아직 Workflow 미구현): Frontend Test, Build
+- Frontend Build(목표, 아직 Workflow 미구현)
 - Integration/E2E: 모든 PR에 강제하지 않고 주요 Domain 연결, 주요 Merge, Demo/Release 전에 수행
 
-현재 Python Checks는 `python -m ruff check .`, `python -m ruff format --check .`, `tests/unit`의 `unittest` discovery, `tests/contract`의 `unittest` discovery를 실행합니다. 테스트 커버리지 수치는 MVP의 일률적 Gate로 두지 않으며 핵심 기능과 Contract Test의 존재를 우선합니다. 아직 manifest나 Workflow가 없는 영역의 구체 명령은 해당 기술 Bootstrap과 CI 구현 시 확정합니다.
+현재 Python Checks는 `python -m ruff check .`, `python -m ruff format --check .`와 `tests/unit`, `tests/contract`, `tests/security`, `tests/integration`의 `unittest` discovery를 실행합니다. Frontend Checks는 `node --test`로 Frontend Model Test를 실행합니다. 두 Workflow는 서로 다른 Path Filter를 사용하므로 Required Check로 등록할 때 함께 등록해야 합니다. 테스트 커버리지 수치는 MVP의 일률적 Gate로 두지 않으며 핵심 기능과 Contract Test의 존재를 우선합니다. 아직 manifest나 Workflow가 없는 영역의 구체 명령은 해당 기술 Bootstrap과 CI 구현 시 확정합니다.
+
+### 로컬 실행
+
+개발 도구는 `requirements-dev.txt`에, 배포 단위별 Runtime 의존성은 각 `requirements.txt`에 version이 고정되어 있습니다. Governance Domain의 `pypdf`가 개발 도구가 아니라 Runtime 의존성인 근거는 [ADR 0007](docs/decisions/0007-governance-document-ingestion-boundary.md)을 확인합니다.
+
+```bash
+python -m pip install --requirement requirements-dev.txt --requirement apps/backend/requirements.txt --requirement packages/governance/requirements.txt
+
+node --test tests/unit/test_policy_frontend.mjs
+```
+
+`unittest`는 `packages.*`를 절대 import로 사용하므로 Repository Root에서 실행합니다.
 
 ## 문서와 Contract
 

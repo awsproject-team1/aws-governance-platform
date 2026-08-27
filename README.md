@@ -52,12 +52,27 @@ React Frontend와 API Gateway/Lambda Backend가 Cognito 인증을 사용합니�
 
 ## 개발 시작점
 
-현재 단계는 Repository/문서/Python/Backend Package Bootstrap, 최소 MVP Transport Contract, Cognito claim/RBAC, Job lifecycle과 DynamoDB/S3 repository adapter 경계까지 구현됐습니다. 실제 제품 Lambda Handler, API Gateway Event/Response Adapter, Agent, Tool, AWS Resource와 Infrastructure wiring은 아직 없습니다. `_bootstrap_probe`는 배포 대상이 아닌 Package 검증용입니다.
+현재 단계는 Repository/문서/Python/Backend Package Bootstrap, 최소 MVP Transport Contract,
+Cognito claim/RBAC, Job lifecycle과 DynamoDB/S3 repository adapter 경계, 그리고 Area B의
+Governance Domain 기반까지 구현됐습니다.
+
+Area B는 Policy Source 수집, Rule/Approval/Profile, Effective Rule Set, Source별 Scoring,
+Policy/Evidence Port를 결정론적으로 구현합니다. FSBP/CIS/Tagging/Control Tower/ISMS-P의 공식
+Reference 역할은 Catalog로 구분하지만 Reference 확인만으로 실제 Rule Pack이나 평가 지원을
+주장하지 않습니다. FSBP v1.0.0의 S3 Control Set metadata snapshot은 고정했지만, 기존 S3.8
+Rule을 해당 snapshot에 다시 bind하는 새 Rule version과 Human Approval, Area C evaluator
+계약은 아직 필요합니다.
+
+실제 제품 Lambda Handler, API Gateway Event/Response Adapter, Assessment 실행기, Agent,
+Tool, AWS Resource와 Infrastructure wiring은 아직 없습니다. `_bootstrap_probe`는 배포
+대상이 아닌 Package 검증용입니다. 따라서 전체 Application이 실행 가능한 상태는 아닙니다.
 
 1. [제품 요구사항](docs/PRD.md)과 [기술 설계](docs/DESIGN.md)를 읽습니다.
 2. [Contract](docs/CONTRACTS.md), [API](docs/API.md), [Naming](docs/NAMING.md)을 확인합니다.
 3. 사람 개발자는 [CONTRIBUTING.md](CONTRIBUTING.md), Coding Agent는 [AGENTS.md](AGENTS.md)를 따릅니다.
 4. GitHub Issue를 만들고 `dev`에서 short-lived feature branch를 생성해 작업합니다.
+
+Governance Domain의 문서 수집 경계와 Runtime 의존성 결정은 [ADR 0007](docs/decisions/0007-governance-document-ingestion-boundary.md)를 확인합니다.
 
 Python 개발 명령은 아래 기술 Bootstrap으로 확정했습니다. 제품 Runtime 환경변수와 Application별 배포 명령은 해당 구현이 결정될 때 각 정본 문서와 `.env.example`에 추가합니다.
 
@@ -71,7 +86,7 @@ PowerShell에서 Python 3.14를 명시해 로컬 환경을 준비합니다.
 py -3.14 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python --version
-python -m pip install --requirement requirements-dev.txt --requirement apps/backend/requirements.txt
+python -m pip install --requirement requirements-dev.txt --requirement apps/backend/requirements.txt --requirement packages/governance/requirements.txt
 ```
 
 변경사항을 검증합니다.
@@ -82,9 +97,16 @@ python -m ruff format --check .
 python -m unittest discover --start-directory tests/unit --pattern "test_*.py" --verbose
 python -m unittest discover --start-directory tests/contract --pattern "test_*.py" --verbose
 python -m unittest discover --start-directory tests/security --pattern "test_*.py" --verbose
+python -m unittest discover --start-directory tests/integration --pattern "test_*.py" --verbose
 ```
 
-Python CI는 동일한 명령을 실행하며, 모든 Pull Request에는 별도 Secret Scan이 실행됩니다. Contract discovery는 Job polling, Assessment acceptance/phase, public error envelope의 실행 가능한 최소 Transport Contract를 검증합니다. Security discovery는 Cognito Access Token claim/action RBAC와 Job 소유권/provider 오류 정제의 fail-closed 경계를 검증합니다. 제품 Lambda Handler, API Gateway Event/Response Adapter와 실제 AWS resource wiring은 선택하지 않습니다.
+Frontend Model Test는 Node로 실행합니다.
+
+```powershell
+node --test tests/unit/test_policy_frontend.mjs
+```
+
+Python CI는 동일한 명령을 실행하며, Frontend 변경은 별도 Workflow가, 모든 Pull Request는 별도 Secret Scan이 실행됩니다. Contract discovery는 Job polling, Assessment acceptance/phase, public error envelope의 실행 가능한 최소 Transport Contract와, Area B가 Producer인 `tests/contract/test_governance_to_assessment.py`를 검증합니다. 후자는 Area C의 evaluator acceptance 전까지 B가 만드는 Rule/Evidence/Metric 형식만 검증하며 실제 PASS/FAIL 판정을 포함하지 않습니다. Security discovery는 Cognito Access Token claim/action RBAC와 Job 소유권/provider 오류 정제의 fail-closed 경계를 검증합니다. 제품 Lambda Handler, API Gateway Event/Response Adapter와 실제 AWS resource wiring은 선택하지 않습니다.
 
 ## Backend Lambda Bootstrap
 
