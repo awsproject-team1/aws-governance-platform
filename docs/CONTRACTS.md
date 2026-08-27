@@ -115,6 +115,15 @@ Rule ID 형식은 [NAMING.md](NAMING.md)를 따른다. 하나의 Rule이 여러 
 - Validation: 승인 Repository와 Commit 존재·권한을 검증한다. Terraform 원문은 S3 Artifact, 메타데이터는 Application Data Store에 둔다.
 - Versioning: Commit SHA가 Snapshot identity의 핵심이며 Schema version은 Open Decision이다.
 
+실행 정본은 `packages/contracts/iac_snapshots.py`의 `IaCSnapshot`이다. 현재 고정된 검증은 다음과 같다.
+
+- `commit_sha`는 40자 소문자 16진수다.
+- `files[]`는 Terraform 원문이 아닌 경로 목록이며 중복 없이 정렬된 상태로 재현성을 보장한다.
+- Terraform 원문은 `files[]`에 담지 않고 `snapshot_ref`가 가리키는 Artifact에만 보존한다.
+- `snapshot_ref`는 Storage 위치를 노출하지 않는 opaque 문자열이다.
+
+`snapshot_ref`의 구체 Artifact Key 형식, Bucket 노출 방식, 기준 branch/base ref 필드는 여전히 Open Decision이다. Tool 실행 오류는 `tools/github/errors.py`의 `GitHubToolError` 계층으로만 표현하며 Governance `FAIL`로 변환하지 않는다.
+
 ## Assessment
 
 - Purpose: Initial/Pre/Post Governance 평가 실행 1회의 Header/Metadata
