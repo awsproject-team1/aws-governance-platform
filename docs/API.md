@@ -4,7 +4,9 @@
 
 ## 공통 원칙
 
-- Browser 요청은 Cognito JWT로 인증하고 Backend가 action별 RBAC를 검증한다.
+- Browser 요청은 Cognito Access Token으로 인증한다. API Gateway HTTP API JWT Authorizer가 Token을 검증하고 Backend가 검증된 claim의 목적·identity와 action별 RBAC를 다시 확인한다.
+- Product Role은 `cognito:groups`의 정확한 `Admin`, `User` 값만 사용하며 Request Body나 Frontend 상태에서 Role을 받지 않는다. `Admin`은 User 기능을 포함한다.
+- 현재 실행 가능한 권한 정본은 `START_ASSESSMENT`(`POST /assessments`)와 `READ_JOB`(`GET /jobs/{job_id}`)이며 Admin/User 모두 허용한다. 다른 Endpoint의 Action/Role Matrix는 Open Decision이고 등록 전까지 허용하지 않는다.
 - 명시적인 Assessment/Remediation UI는 전용 API를 호출하며 자연어 Router를 거치지 않는다.
 - 장시간 Workflow는 `202 Accepted + job_id`를 반환하고 `GET /jobs/{job_id}` Polling으로 추적한다.
 - Job API는 진행 상태와 연결 ID만 반환한다. 실제 결과는 Domain API로 조회한다.
@@ -29,7 +31,7 @@
 | `POST` | `/deployments/{deployment_id}/approval` | Apply 승인 또는 거절 | Async resume/terminate | Deployment |
 | `GET` | `/jobs/{job_id}` | Workflow 진행 상태 Polling | Sync | Job, Error |
 
-모든 Endpoint는 인증 대상이다. Admin/User의 세부 허용 Matrix는 구현 전에 확정하며 Frontend 표시만으로 권한을 허용하지 않는다.
+모든 Endpoint는 인증 대상이다. 현재 확정된 `POST /assessments`와 `GET /jobs/{job_id}` 외 Endpoint의 Admin/User 허용 Matrix는 Open Decision이며, Backend Action Policy에 등록되기 전까지 허용하지 않는다. Frontend 표시만으로 권한을 허용하지 않는다.
 
 ## Chat
 
@@ -126,6 +128,8 @@ Purpose: Repository와 Scope를 구조화해 Initial Assessment 시작.
 ```
 
 `assessment_id`는 실제 단계 진입 시 생성되어 Job 조회에서 노출된다.
+
+실행 가능한 202 응답 정본은 `packages.contracts.AssessmentAcceptedResponse`다. 이 타입은 `job_id`와 고정된 `QUEUED` 상태만 소유한다. Request의 Scope/Profile Schema와 실제 Handler는 Open Decision이므로 아직 실행 가능한 Contract에 포함하지 않는다.
 
 ### `GET /assessments/{assessment_id}`
 
@@ -325,6 +329,10 @@ Purpose: Polling용 Workflow 진행 상태와 연결된 Domain ID 조회.
 
 Finding, Report, Patch, Plan 본문은 이 API가 반환하지 않는다.
 
+실행 가능한 응답 정본은 `packages.contracts.JobResponse`이며 상태와 단계는 각각 `JobStatus`, `JobCurrentStep`으로 제한한다. `job_type`과 연결 ID는 opaque non-empty string이고 연결 전 ID는 `null`이다. Job 내부 `error`는 공개 `ApiError` detail 또는 `null`이며 `ApiErrorResponse`의 최상위 envelope를 중첩하지 않는다. 닫힌 `job_type` 집합과 `QUEUED`의 기본 `current_step`은 Open Decision이다.
+
+내부 Job의 `requested_by`와 `revision`은 이 응답에 포함하지 않는다. Backend는 action-level `READ_JOB` 확인 뒤 User에게 `requested_by`가 자신의 Cognito subject와 같은 Job만 반환하고 Admin에게는 모든 Job 조회를 허용한다. 존재 여부와 소유권 거부를 HTTP에서 구분할지는 Handler Contract에서 확정한다.
+
 ## Error
 
 Backend API의 최소 오류 응답은 다음 형식이다.
@@ -338,6 +346,8 @@ Backend API의 최소 오류 응답은 다음 형식이다.
 }
 ```
 
+실행 가능한 정본은 `packages.contracts.ApiError`와 최상위 `ApiErrorResponse`다. `code`와 `message`는 non-empty string이지만 endpoint별 `code`의 닫힌 Enum은 아직 확정하지 않는다. Job 응답의 `error` 필드는 `ApiError` detail만 사용한다.
+
 | HTTP | Category |
 |---|---|
 | `400` | `INVALID_REQUEST` |
@@ -349,7 +359,7 @@ Backend API의 최소 오류 응답은 다음 형식이다.
 | `500` | `INTERNAL_ERROR` |
 | `502` | `EXTERNAL_SERVICE_ERROR` |
 
-Tool 내부 오류는 더 풍부한 `error_code`, `retryable`, `source`, `details`를 사용할 수 있지만 외부 API 최소 Contract와 혼합하지 않는다. AWS/GitHub/LLM 실패는 Governance `FAIL`이 아니라 Workflow 실행 오류다.
+Tool 내부 오류는 더 풍부한 `error_code`, `retryable`, `source`, `details`를 사용할 수 있지만 외부 API 최소 Contract와 혼합하지 않는다. AWS/GitHub/LLM 실패는 Governance `FAIL`이 아니라 Workflow 실행 오류다. Backend는 provider exception text를 응답에 복사하지 않고 lifecycle/CAS 충돌을 `INVALID_STATE`, repository provider 실패를 `EXTERNAL_SERVICE_ERROR`, 알 수 없는 예외를 `INTERNAL_ERROR`의 고정 message로 정제한다. 실제 Handler의 HTTP mapping과 endpoint별 닫힌 code 집합은 해당 Handler Contract에서 확정한다.
 
 ## 외부 Interface
 

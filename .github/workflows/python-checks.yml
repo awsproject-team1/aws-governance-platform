@@ -54,3 +54,6 @@ jobs:
 
       - name: Run contract tests
         run: python -m unittest discover --start-directory tests/contract --pattern "test_*.py" --verbose
+
+      - name: Run security tests
+        run: python -m unittest discover --start-directory tests/security --pattern "test_*.py" --verbose
