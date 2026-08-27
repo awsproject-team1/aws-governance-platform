@@ -8,7 +8,7 @@ from enum import StrEnum
 
 from packages.contracts._validation import require_non_empty_string
 from packages.contracts.errors import ApiError
-from packages.contracts.governance import EffectiveRuleSet
+from packages.contracts.governance import EffectiveRuleSet, require_supported_scoring_version
 from packages.contracts.jobs import JobCurrentStep, JobStatus
 
 
@@ -152,7 +152,9 @@ class AssessmentStartCommand:
             raise TypeError("effective_rule_set must be an EffectiveRuleSet")
         if self.effective_rule_set.phase.value != self.phase.value:
             raise ValueError("effective_rule_set phase must match phase")
-        require_non_empty_string(self.scoring_version, "scoring_version")
+        if not self.effective_rule_set.rules:
+            raise ValueError("effective_rule_set must contain at least one rule")
+        require_supported_scoring_version(self.scoring_version)
 
     @classmethod
     def from_dict(cls, value: object) -> AssessmentStartCommand:

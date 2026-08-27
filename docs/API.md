@@ -116,7 +116,24 @@ Purpose: 명시적인 Initial Assessment를 시작한다.
 
 `phase`, `repository_id`, `policy_profile_id`, `policy_profile_version`는 모두 필수이며 unknown field는 거절한다. 이 Endpoint는 현재 `INITIAL`만 허용한다. MVP에는 기본 Profile이 없으므로 Profile ID 또는 version이 없는 요청은 거절한다. A는 transport/type과 호출자의 Profile 사용 권한을 검증하고, B Governance port는 `(policy_profile_id, policy_profile_version)` 존재 및 pin된 Rule의 ACTIVE 상태를 검증한다.
 
-`admin_settings_snapshot_hash`, `scoring_version`, `EffectiveRuleSet`은 client request field가 아니다. A가 start 시점에 Admin Settings snapshot을 저장·hash로 pin한 뒤 B에서 Effective Rule Set과 scoring version을 얻어 C에 전달한다. 현재 Scope의 Resource inventory 및 전체/부분 표현은 D/C 공동 Open Decision이므로 request에 포함하지 않는다.
+`admin_settings_snapshot_hash`, `scoring_version`, `EffectiveRuleSet`은 client request field가 아니다. A는 start 시점에 Admin Settings snapshot을 저장·hash로 pin하고, B가 현재 `SCORING_VERSION`과 `(policy_profile_id, policy_profile_version, phase)`에 맞는 Effective Rule Set을 결정하도록 한다. C에 보내는 `AssessmentStartCommand`는 B의 `require_supported_scoring_version`으로 pin된 version을 검증한다. 현재 Scope의 Resource inventory 및 전체/부분 표현은 D/C 공동 Open Decision이므로 request에 포함하지 않는다.
+
+B가 결정한 Effective Rule Set에 실행 가능한 Rule이 없으면 A는 Job 또는 Assessment를 만들거나 C에 dispatch하지 않고 아래 응답으로 start를 거부한다. 이는 Profile 자체의 오류가 아니라 선택한 Profile version과 phase 조합에 실행 가능한 Rule이 없다는 뜻이다.
+
+```text
+400 Bad Request
+```
+
+```json
+{
+  "error": {
+    "code": "EFFECTIVE_RULE_SET_EMPTY",
+    "message": "No executable rules are available for the selected policy profile and phase."
+  }
+}
+```
+
+Effective Rule Set이 비지 않은 경우에만 A가 Job을 저장하고 C start command를 dispatch한다.
 
 ```text
 202 Accepted

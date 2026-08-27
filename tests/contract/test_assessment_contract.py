@@ -17,7 +17,7 @@ from packages.contracts import (
     JobCurrentStep,
     JobStatus,
 )
-from packages.contracts.governance import EffectiveRuleSet
+from packages.contracts.governance import SCORING_VERSION, EffectiveRuleSet
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -77,7 +77,7 @@ class AssessmentContractTest(unittest.TestCase):
         self.assertEqual(
             command.effective_rule_set.admin_settings_snapshot_hash, "sha256:" + "a" * 64
         )
-        self.assertEqual(command.scoring_version, "1")
+        self.assertEqual(command.scoring_version, SCORING_VERSION)
 
         mismatched_set = EffectiveRuleSet.from_dict(
             {
@@ -93,6 +93,25 @@ class AssessmentContractTest(unittest.TestCase):
                 effective_rule_set=mismatched_set,
                 scoring_version="1",
             )
+
+    def test_start_command_rejects_unsupported_scoring_and_empty_effective_rules(self) -> None:
+        base = self.fixture["assessment_start_command"]
+        cases = (
+            ({**base, "scoring_version": "2"}, "unsupported scoring_version: 2; supported: 1"),
+            ({**base, "scoring_version": "01"}, "scoring_version must be a decimal integer string"),
+            (
+                {
+                    **base,
+                    "effective_rule_set": {**base["effective_rule_set"], "rules": []},
+                },
+                "effective_rule_set must contain at least one rule",
+            ),
+        )
+
+        for payload, message in cases:
+            with self.subTest(payload=payload):
+                with self.assertRaisesRegex(ValueError, message):
+                    AssessmentStartCommand.from_dict(payload)
 
     def test_linkage_protocol_fixes_the_revision_one_activation_boundary(self) -> None:
         acknowledgement = AssessmentStartAcknowledgement.from_dict(
