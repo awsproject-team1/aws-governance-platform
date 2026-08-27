@@ -187,11 +187,13 @@ GitHub Actions는 Path Filter로 변경 영역에 필요한 검사를 자동 선
 
 - 모든 PR: `validate-pr-source` (`main`/`dev` 대상 PR의 head/base 조합 검증)
 - 모든 PR: Secret Scan
-- Python 변경: Unit Test, Contract Test, Integration Test, Ruff Lint/Format
+- Python 변경: Unit Test, Contract Test, Integration Test, Security Test, Ruff Lint/Format
 - Frontend 변경: Frontend Model Test
 - Terraform 변경(목표, 아직 Workflow 미구현): `terraform fmt -check`, `terraform validate`, TFLint, Checkov
 - Frontend Build(목표, 아직 Workflow 미구현)
-- Integration/E2E: 모든 PR에 강제하지 않고 주요 Domain 연결, 주요 Merge, Demo/Release 전에 수행
+- E2E와 외부 의존 Integration: 모든 PR에 강제하지 않고 주요 Domain 연결, 주요 Merge, Demo/Release 전에 수행
+
+`tests/integration`은 고정 Fixture만 사용하고 in-process로 끝나는 Domain 간 연결 Test를 담습니다. 이 범위는 빠르고 결정론적이므로 모든 Python PR에서 실행합니다. Agent/LLM 호출, 실제 AWS/GitHub API, 배포된 환경이 필요한 Test는 이 디렉터리에 넣지 않습니다. 그런 Test를 필수 Gate에 두면 외부 장애나 Credential 만료가 코드와 무관하게 Merge를 막습니다. 해당 Test는 별도 Suite와 Workflow로 분리하고 위 원칙대로 주요 Merge와 Demo/Release 전에 수행합니다.
 
 현재 Python Checks는 `python -m ruff check .`, `python -m ruff format --check .`와 `tests/unit`, `tests/contract`, `tests/security`, `tests/integration`의 `unittest` discovery를 실행합니다. Frontend Checks는 `node --test`로 Frontend Model Test를 실행합니다. 두 Workflow 모두 Path Filter를 사용하므로 **어느 쪽도 그대로 Required Check로 등록하지 않습니다**. 둘 다 등록하면 Python만 바꾼 PR에서 Frontend Checks가, Frontend만 바꾼 PR에서 Python Checks가 영구히 대기 상태로 남아 Merge가 막힙니다. 위 `GitHub Repository 보호 규칙`의 공통 PR Gate가 구현되면 그 Gate 하나를 Required로 등록하고 두 Workflow를 그 아래에 연결합니다. 테스트 커버리지 수치는 MVP의 일률적 Gate로 두지 않으며 핵심 기능과 Contract Test의 존재를 우선합니다. 아직 manifest나 Workflow가 없는 영역의 구체 명령은 해당 기술 Bootstrap과 CI 구현 시 확정합니다.
 
