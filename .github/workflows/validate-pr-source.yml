@@ -1,0 +1,46 @@
+# docs/NAMING.md가 고정한 Required Check다.
+# Ruleset에 등록되는 check 이름은 아래 job name `validate-pr-source`와 정확히 같아야 한다.
+# 이름을 바꾸면 main Ruleset의 Required Check가 영원히 pending 상태가 되어 Merge가 막힌다.
+name: PR Source Validation
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, edited]
+
+# 이 job은 PR의 코드를 checkout하지 않고 Event Metadata만 읽는다.
+permissions:
+  contents: read
+
+jobs:
+  validate-pr-source:
+    name: validate-pr-source
+    runs-on: ubuntu-latest
+    steps:
+      - name: main 대상 PR의 head를 검증한다
+        env:
+          # Branch 이름은 신뢰할 수 없는 입력이므로 `run` 본문에 직접 보간하지 않고
+          # 환경변수로 전달한다. 직접 보간하면 Branch 이름을 통한 Script Injection이 가능하다.
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          if [ "$BASE_REF" != "main" ]; then
+            echo "base가 '$BASE_REF' 이므로 안정화 통합 PR이 아니다. 검사 대상 아님."
+            exit 0
+          fi
+
+          if [ "$HEAD_REPO" != "$BASE_REPO" ]; then
+            echo "::error::main 대상 PR의 head repository는 '$BASE_REPO' 여야 합니다. 현재: '$HEAD_REPO'"
+            exit 1
+          fi
+
+          if [ "$HEAD_REF" != "dev" ]; then
+            echo "::error::main 대상 PR의 유일한 허용 head는 'dev' 입니다. 현재: '$HEAD_REF'. \
+          작업 branch는 dev로 PR하고, main에는 dev만 통합하세요 (docs/NAMING.md)."
+            exit 1
+          fi
+
+          echo "OK: '$HEAD_REPO' 의 dev -> main 안정화 통합 PR"
