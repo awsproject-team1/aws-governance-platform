@@ -12,13 +12,13 @@ Issue
   → Pull Request to dev
   → Required CI
   → 다른 팀원 최소 1명 Review
-  → Squash Merge to dev
+  → Merge Commit to dev
 ```
 
 안정화 시에는 다음 흐름을 사용한다.
 
 ```text
-dev → Pull Request → Required CI / Review → Squash Merge → main
+dev → Pull Request → Required CI / Review → Merge Commit → main
 ```
 
 `main`에 직접 Push하지 않습니다. `dev`에서도 직접 작업하지 않고 Issue에 연결된 short-lived branch를 사용합니다.
@@ -118,7 +118,7 @@ PR에는 다음을 포함합니다.
 - Security / Secret 확인
 - 다른 Owner 확인 필요 여부
 
-목표 협업 정책상 Merge 조건은 해당 PR의 Required CI 통과와 다른 팀원 최소 1명 승인입니다. CI 실패 상태에서는 Merge하지 않고 Squash Merge만 사용합니다. 실제 강제 조건과의 차이는 아래 `GitHub Repository 보호 규칙`의 blocker를 따릅니다. Merge 후 더 이상 필요 없는 feature branch는 삭제할 수 있습니다.
+목표 협업 정책상 Merge 조건은 해당 PR의 Required CI 통과와 다른 팀원 최소 1명 승인입니다. CI 실패 상태에서는 Merge하지 않고 Merge Commit만 사용합니다. 실제 강제 조건과의 차이는 아래 `GitHub Repository 보호 규칙`의 blocker를 따릅니다. Merge 후 더 이상 필요 없는 feature branch는 삭제할 수 있습니다.
 
 일반 PR은 `dev`를 대상으로 하므로 Related Issue에는 `Refs #번호`를 사용하고, Merge 후 해당 Sub-issue를 종료합니다. GitHub의 closing keyword는 기본 branch 대상 PR에서만 동작하므로 `Closes`는 실제 자동 종료 조건을 충족할 때만 사용합니다.
 
@@ -129,7 +129,7 @@ PR에는 다음을 포함합니다.
 - Pull Request와 다른 팀원 최소 1명의 승인을 요구합니다.
 - 최신 Push에 대한 승인과 Review 대화 해결을 요구합니다.
 - 적용되는 Required CI가 성공해야 Merge할 수 있습니다.
-- Force Push와 branch 삭제를 차단하고 Squash Merge를 사용합니다.
+- Force Push와 branch 삭제를 차단하고 Merge Commit만 허용합니다.
 - 관리자 Bypass는 긴급 복구에 필요한 최소 인원으로 제한합니다.
 - 일반 `main` 통합 PR은 `dev`에서만 생성합니다.
 
@@ -137,7 +137,7 @@ Path Filter로 실행되지 않을 수 있는 Workflow를 그대로 Required Che
 
 > **TODO / Merge protection blocker:** 현재 활성 Ruleset에는 Required Status Check가 등록되어 있지 않고, 모든 PR에서 항상 완료 상태를 보고하는 공통 PR Gate Workflow도 없습니다. 따라서 Required CI 통과는 현재 절차상 Merge 조건일 뿐 GitHub이 기술적으로 강제하지 않습니다. 공통 PR Gate를 구현하고 `main`과 `dev` Ruleset의 Required Status Check로 등록하기 전에는 이 차이를 해소한 것으로 간주하지 않습니다.
 >
-> 현재 Ruleset은 2명 승인을 요구하고 Repository Settings는 Merge Commit과 Rebase Merge도 허용하여, 이 문서의 목표인 최소 1명 승인과 Squash Merge와 다릅니다. 설정이 목표 정책에 맞게 조정될 때까지 실제 Merge 가능 조건은 GitHub Repository Settings를 따르고, PR 운영에서는 Squash Merge만 선택합니다.
+> 현재 Ruleset은 2명 승인을 요구하고 Repository Settings는 Merge Commit, Squash Merge, Rebase Merge를 모두 허용하여, 이 문서의 목표인 최소 1명 승인과 Merge Commit만 허용하는 정책을 기술적으로 강제하지 못합니다. 목표 정책에 맞게 Repository Settings에서 Squash Merge와 Rebase Merge를 비활성화할 때까지 PR 운영에서는 Merge Commit만 선택합니다.
 
 ## Test와 CI
 
