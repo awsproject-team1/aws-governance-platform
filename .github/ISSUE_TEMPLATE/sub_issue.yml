@@ -11,6 +11,7 @@ body:
     attributes:
       label: Parent Issue reference
       placeholder: "#123"
+      description: Parent 번호를 기록한 뒤 GitHub의 native Parent/Sub-issue 관계도 별도로 연결합니다.
     validations:
       required: true
   - type: textarea
@@ -38,7 +39,7 @@ body:
     id: acceptance
     attributes:
       label: Acceptance Criteria
-      description: 구현, Test, 문서 완료 조건을 체크리스트로 작성합니다.
+      description: 이 Sub-issue의 구현과 PR에 적용할 구현, Test, 문서 완료 조건을 체크리스트로 작성합니다.
     validations:
       required: true
   - type: dropdown
@@ -73,4 +74,4 @@ body:
       required: true
   - type: markdown
     attributes:
-      value: "구현과 로컬 검증 후 dev 대상 PR을 생성합니다. 사람의 Review/Merge 후 dev 반영을 확인하고 Issue를 수동으로 닫은 다음 후속 Sub-issue를 시작합니다."
+      value: "Issue 생성 후 해당 영역 Owner가 Assignee, 공유 Milestone, Project 상태와 실제 Parent/Sub-issue 및 Blocked by/Blocking 관계를 설정합니다. 구현 Agent는 착수 시 Parent의 Goal, Scope(제외 범위 포함), 직접 의존 관계를 한 번 확인하고, 이 Issue의 Scope, Acceptance Criteria, Test / Validation을 구현 경계로 사용합니다. 구현과 로컬 검증 후 dev 대상 PR을 생성하고, 사람의 Review/Merge와 dev 반영을 확인한 뒤 Issue를 수동으로 닫고 다음 Sub-issue를 시작합니다."

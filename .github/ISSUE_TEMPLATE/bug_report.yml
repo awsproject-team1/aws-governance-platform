@@ -65,3 +65,6 @@ body:
       description: 수정, Regression Test, dev 재현 확인 조건을 작성합니다.
     validations:
       required: true
+  - type: markdown
+    attributes:
+      value: "현재 목표를 막는 Bug는 해당 Milestone과 Project에 배치하고, 선행 작업이 있으면 Blocked by/Blocking 관계를 설정합니다."
