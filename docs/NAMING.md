@@ -39,6 +39,15 @@ docs/update-contracts
 chore/bootstrap-repository
 ```
 
+Platform Repository의 branch와 PR 경로는 다음과 같이 고정한다.
+
+- short-lived 작업 branch: `feature/*`, `fix/*`, `docs/*`, `refactor/*`, `test/*`, `chore/*`
+- 일반 PR: short-lived 작업 branch → `dev`
+- 안정화 통합 PR: 같은 Repository의 `dev` → `main`
+- 금지: short-lived 작업 branch → `main`, `main`/`dev` direct push, force push, 보호 규칙 bypass
+
+PR의 head/base 조합을 확인하는 Required Check 이름은 `validate-pr-source`를 사용한다. GitHub Workflow/Job 전체 Naming은 별도 Open Decision이지만, Ruleset에 연결되는 이 check 이름은 보호 설정과 문서에서 동일하게 유지한다.
+
 Remediation이 고객 IaC Repository에 만드는 Branch의 현재 설계 예시는 다음과 같다.
 
 ```text
@@ -182,6 +191,8 @@ API JSON 예시는 `snake_case`를 사용하고 있으나 모든 외부/내부 S
 
 - Platform Repository와 Customer IaC Repository는 별도 Naming과 Lifecycle을 가진다.
 - 일반 개발 branch는 `type/kebab-case`를 따른다.
+- Platform Repository의 일반 PR base는 `dev`이며 `main` 대상 PR의 유일한 허용 head는 같은 Repository의 `dev`다.
+- Platform Repository의 source 검증 Required Check는 `validate-pr-source`다.
 - Customer Remediation branch는 현재 설계 예시 `feature/governance-remediation-<id>`를 사용한다.
 - GitHub Actions Workflow, Environment, OIDC Role/Subject Naming은 Open Decision이다.
 
