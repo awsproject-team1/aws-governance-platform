@@ -50,6 +50,7 @@ Repository 전체 문서나 디렉터리를 기본 Context로 적재하지 않�
 - Sub-issue 착수 시 Parent의 Goal, Scope(제외 범위 포함), 직접 의존 관계를 한 번 확인한다. 구현 중에는 Sub-issue만으로 범위를 판단할 수 없거나 Parent 변경 알림을 받았을 때, 또는 모든 Sub-issue 완료 후 Parent를 종료할 때만 Parent 전체를 다시 확인한다.
 - A/B/C/D는 같은 공유 Milestone과 Project 안에서 각자 담당 Sub-issue의 Assignee와 상태를 갱신한다. Milestone 기간·전체 범위·Owner 간 우선순위는 임의로 변경하지 않고 사람이 종합 판단한다.
 - 공통 Contract 또는 다른 Owner 영역에 영향이 있을 때만 관련 Parent·Issue와 정본을 추가로 확인하고 해당 Owner와 합의한다.
+- 모든 완료 조건을 충족한 Sub-issue 또는 Bug의 `dev` PR에는 `Closes #이슈번호`를 사용하고, 일부 범위만 다루면 `Refs #이슈번호`를 사용한다. Review와 Merge는 사람이 수행하고 GitHub가 연결된 Issue를 자동 종료한다. Agent는 Issue close API를 직접 호출하지 않으며 Parent Issue를 PR closing keyword로 닫지 않는다.
 - 이 절은 Context와 책임 범위를 제한하는 규칙이다. Issue 생성·수정 등 GitHub 원격 변경은 사용자의 명시적 요청이 있을 때만 수행한다.
 
 ## Skills

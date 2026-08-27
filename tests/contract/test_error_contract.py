@@ -21,6 +21,26 @@ class ApiErrorContractTest(unittest.TestCase):
             },
         )
 
+    def test_empty_effective_rule_set_uses_the_stable_public_error_code(self) -> None:
+        response = ApiErrorResponse(
+            error=ApiError(
+                code="EFFECTIVE_RULE_SET_EMPTY",
+                message="No executable rules are available for the selected policy profile and phase.",
+            )
+        )
+
+        self.assertEqual(
+            response.to_dict(),
+            {
+                "error": {
+                    "code": "EFFECTIVE_RULE_SET_EMPTY",
+                    "message": (
+                        "No executable rules are available for the selected policy profile and phase."
+                    ),
+                }
+            },
+        )
+
     def test_error_fields_must_be_non_empty_strings(self) -> None:
         with self.assertRaisesRegex(ValueError, "code must be a non-empty string"):
             ApiError(code=" ", message="Assessment not found")

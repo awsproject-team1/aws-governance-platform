@@ -36,10 +36,10 @@ dev → Pull Request → Required CI / Review → Merge Commit → main
 - Parent Issue의 전체 Acceptance Criteria와 주요 산출물은 모든 소속 Sub-issue가 완료된 뒤 Parent를 종료하는 단계에서 종합적으로 검증합니다.
 - 다른 Owner 영역이나 공통 Contract에 영향을 주면 구현 전에 관련 Owner와 합의합니다.
 - Sub-issue 구현과 로컬 검증을 마친 뒤 Platform Repository PR을 `dev` 대상으로 생성합니다. Required CI는 PR 이후 Gate로 수행합니다.
-- PR은 Sub-issue를 `Refs`하고 자동 종료용 `Closes`를 사용하지 않습니다.
-- Review와 Merge는 사람이 수행합니다. `dev` Merge를 확인한 뒤 사람이 Sub-issue를 닫고 다음 Sub-issue를 시작합니다.
-- Parent 통합 검증도 마지막 Native Sub-issue로 생성해 같은 구현·검증·Review·Merge·수동 종료 절차를 적용합니다.
-- 통합 검증 Sub-issue를 포함한 모든 Native Sub-issue가 종료되어 progress가 100%가 되면 Parent Issue를 닫습니다.
+- 완료 가능한 Sub-issue 또는 Bug의 일반 PR은 기본 브랜치인 `dev`를 대상으로 하고, 모든 Acceptance Criteria를 충족한 경우 PR 설명에 `Closes #이슈번호`를 사용합니다. 일부 범위만 다루는 PR은 `Refs #이슈번호`를 사용하고 Issue를 열어 둡니다.
+- Review와 Merge는 사람이 수행합니다. Agent는 Issue close API를 호출하지 않으며, 사람이 `dev`에 Merge하면 GitHub가 `Closes`로 연결된 Issue를 닫습니다. 자동 종료를 확인한 뒤 다음 Sub-issue를 시작합니다.
+- Parent 통합 검증도 마지막 Native Sub-issue로 생성해 같은 구현·검증·Review·사람 Merge·GitHub native 자동 종료 절차를 적용합니다.
+- 통합 검증 Sub-issue를 포함한 모든 Native Sub-issue가 종료되어 progress가 100%가 되면, 사람이 Parent 전체 Acceptance Criteria와 주요 산출물을 종합 검증한 뒤 Parent Issue를 닫습니다.
 
 ### 역할과 작업 조정
 
@@ -136,7 +136,7 @@ PR에는 다음을 포함합니다.
 
 목표 협업 정책상 Merge 조건은 해당 PR의 Required CI 통과와 다른 팀원 최소 1명 승인입니다. CI 실패 상태에서는 Merge하지 않고 Merge Commit만 사용합니다. 실제 강제 조건과의 차이는 아래 `GitHub Repository 보호 규칙`의 blocker를 따릅니다. Merge 후 더 이상 필요 없는 feature branch는 삭제할 수 있습니다.
 
-일반 PR은 `dev`를 대상으로 하므로 Related Issue에는 `Refs #번호`를 사용하고, Merge 후 해당 Sub-issue를 종료합니다. GitHub의 closing keyword는 기본 branch 대상 PR에서만 동작하므로 `Closes`는 실제 자동 종료 조건을 충족할 때만 사용합니다.
+기본 브랜치인 `dev`를 대상으로 하는 완료 가능한 Sub-issue 또는 Bug PR은 Related Issue에 `Closes #번호`를 사용합니다. 모든 완료 조건을 충족하지 않은 부분 PR은 `Refs #번호`를 사용하고 Issue를 열어 둡니다. 사람이 PR을 Merge하면 GitHub가 closing keyword로 연결된 Issue를 자동 종료하며, Agent는 Issue close API를 호출하지 않습니다. Parent Issue는 PR의 closing keyword로 닫지 않고 모든 Sub-issue 종료 후 사람이 종합 검증해 닫습니다. 기본 브랜치가 변경되면 native 자동 종료 조건도 함께 재검토합니다.
 
 ## GitHub Repository 보호 규칙
 
