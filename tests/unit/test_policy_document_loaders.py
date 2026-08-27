@@ -1,6 +1,7 @@
 """형식별 Loader가 원본 구조를 언제 보존하고 언제 명시적으로 실패하는지 고정한다."""
 
 import json
+import subprocess
 import sys
 import unittest
 from pathlib import Path
@@ -447,6 +448,64 @@ class LocatorTests(unittest.TestCase):
     def test_locator_rejects_values_that_break_the_canonical_form(self):
         with self.assertRaises(GovernanceValidationError):
             SourceLocator.of("md", line="1/2")
+
+
+#: pypdf를 못 찾게 만든 뒤 Governance import 사슬과 PDF 적재를 각각 확인한다.
+_PYPDF_ABSENT_SCRIPT = r"""
+import sys
+
+class _Block:
+    def find_spec(self, name, path=None, target=None):
+        if name == "pypdf" or name.startswith("pypdf."):
+            raise ModuleNotFoundError(name)
+        return None
+
+sys.meta_path.insert(0, _Block())
+
+# 1. 문서 파싱과 무관한 소비자가 Governance를 import할 수 있어야 한다.
+import packages.governance.sources.catalog  # noqa: F401
+from packages.governance.sources.canonical_document import DocumentFormat, DocumentMetadata
+from packages.governance.sources.loaders import (
+    LoaderDependencyError,
+    PdfTriageLoader,
+    default_loader_registry,
+)
+
+# 2. Registry 구성까지도 PDF 의존성을 요구하지 않는다.
+default_loader_registry()
+assert "pypdf" not in sys.modules, "import 단계에서 pypdf가 적재됐다"
+
+# 3. 실제 PDF를 열 때만, 그리고 LoaderError 계약 안에서 실패한다.
+metadata = DocumentMetadata(
+    document_id="d",
+    document_version="1",
+    detected_format=DocumentFormat.PDF,
+    source_hash="0" * 64,
+)
+try:
+    PdfTriageLoader().load(b"%PDF-1.7\n", metadata)
+except LoaderDependencyError:
+    pass
+else:
+    raise AssertionError("pypdf 없이 PDF를 적재했는데 LoaderDependencyError가 아니다")
+"""
+
+
+class PdfDependencyIsolationTest(unittest.TestCase):
+    """B의 PDF 파서가 Governance package 전체의 import 조건이 되면 안 된다.
+
+    이 결합이 살아나면 다른 Owner가 공통 Contract Test를 돌릴 때 pypdf 미설치만으로
+    Test가 통째로 collection에서 사라지고 ImportError 하나만 남는다.
+    """
+
+    def test_import_chain_does_not_require_pypdf(self) -> None:
+        result = subprocess.run(
+            [sys.executable, "-c", _PYPDF_ABSENT_SCRIPT],
+            cwd=str(REPO),
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 if __name__ == "__main__":

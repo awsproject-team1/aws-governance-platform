@@ -22,9 +22,6 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
-from pypdf import PdfReader
-from pypdf.errors import FileNotDecryptedError, PdfReadError
-
 from ..canonical_document import (
     BlockType,
     CanonicalDocumentBuilder,
@@ -33,7 +30,7 @@ from ..canonical_document import (
     DocumentMetadata,
     SourceLocator,
 )
-from .base import DocumentLoader, ExtractionError, OcrRequiredError
+from .base import DocumentLoader, ExtractionError, LoaderDependencyError, OcrRequiredError
 
 MAX_PDF_PAGES = 500
 MAX_EXTRACTED_CHARACTERS = 2_000_000
@@ -173,9 +170,28 @@ class PdfTriageLoader(DocumentLoader):
         return builder.build()
 
 
+def _load_pypdf() -> tuple[Any, type[Exception], type[Exception]]:
+    """pypdf를 실제 PDF 바이트를 열 때만 적재한다.
+
+    최상단에서 import하면 ``loaders/__init__`` -> ``ingestion`` -> ``catalog``를 타고
+    Governance package 전체가 pypdf에 묶인다. 그러면 문서 파싱과 무관한 B->C Contract
+    Test까지 pypdf 없이는 collection 단계에서 통째로 사라지고 ``ImportError`` 하나만
+    남는다. 다른 Owner가 공통 Test를 돌리는 데 B의 PDF 파서가 필요할 이유는 없다.
+    """
+    try:
+        from pypdf import PdfReader
+        from pypdf.errors import FileNotDecryptedError, PdfReadError
+    except ModuleNotFoundError as exc:
+        raise LoaderDependencyError(
+            "PDF Loader에 pypdf가 필요하다. packages/governance/requirements.txt를 설치해야 한다."
+        ) from exc
+    return PdfReader, FileNotDecryptedError, PdfReadError
+
+
 def _analyze_pdf(content: bytes) -> _PdfAnalysis:
     if not content.startswith(b"%PDF-"):
         raise ExtractionError("PDF signature가 없다")
+    PdfReader, FileNotDecryptedError, PdfReadError = _load_pypdf()
     try:
         reader = PdfReader(io.BytesIO(content), strict=False)
     except (PdfReadError, ValueError, TypeError) as exc:
