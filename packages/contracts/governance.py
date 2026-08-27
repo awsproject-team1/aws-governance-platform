@@ -13,6 +13,7 @@ from enum import Enum
 from typing import Any
 
 RULE_ID_PATTERN = re.compile(r"^(GLOBAL|CUSTOMER)-[A-Z0-9]+-[A-Z0-9]+-[0-9]{3}$")
+TOKEN_PATTERN = re.compile(r"[A-Z][A-Z0-9_]*")
 HASH_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 
 
@@ -94,9 +95,20 @@ class EvidenceResultStatus(str, Enum):
     ERROR = "ERROR"
 
 
-def _mapping(value: Any, name: str) -> Mapping[str, Any]:
+def _mapping(value: Any, name: str, allowed: frozenset[str]) -> Mapping[str, Any]:
+    """Reject unknown keys instead of discarding them.
+
+    Silently dropping an unknown key turns a Consumer typo into wrong data rather than a
+    validation error. ``sevirity`` would be discarded while ``severity`` keeps whatever the
+    payload happened to carry, and severity is the scoring weight, so the result is a wrong
+    compliance score with nothing reported. This is the B-to-C boundary, so the contract has
+    to say no.
+    """
     if not isinstance(value, Mapping):
         raise ContractValidationError(f"{name} must be an object")
+    unknown = sorted(key for key in value if key not in allowed)
+    if unknown:
+        raise ContractValidationError(f"{name} has unknown field(s): {', '.join(unknown)}")
     return value
 
 
@@ -116,6 +128,22 @@ def _hash(value: Any, name: str) -> str:
     value = _text(value, name)
     if not HASH_PATTERN.fullmatch(value):
         raise ContractValidationError(f"{name} must be a lowercase sha256 digest")
+    return value
+
+
+def _token(value: Any, name: str) -> str:
+    """Constrain the token shape without deciding the vocabulary.
+
+    ``remediation_type`` is still a free-form ``str`` because its full enum is an Open
+    Decision owned jointly with Area D, which consumes it. Leaving it completely
+    unconstrained means ``"terraform patch!!"`` and ``"<script>x</script>"`` are valid
+    Rule content, and the value is inside the approval semantic hash, so junk there
+    permanently churns approval bindings. Fixing the shape now costs nothing and does
+    not pre-empt the vocabulary decision.
+    """
+    value = _text(value, name)
+    if not TOKEN_PATTERN.fullmatch(value):
+        raise ContractValidationError(f"{name} must be an UPPER_SNAKE_CASE token")
     return value
 
 
@@ -155,7 +183,7 @@ class Control(Contract):
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> Control:
-        value = _mapping(value, "control")
+        value = _mapping(value, "control", frozenset({"control_key"}))
         return cls(control_key=_text(value.get("control_key"), "control_key"))
 
 
@@ -168,7 +196,11 @@ class SourceReference(Contract):
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> SourceReference:
-        value = _mapping(value, "source_reference")
+        value = _mapping(
+            value,
+            "source_reference",
+            frozenset({"content_hash", "document_id", "document_version", "section"}),
+        )
         return cls(
             document_id=_text(value.get("document_id"), "document_id"),
             document_version=_text(value.get("document_version"), "document_version"),
@@ -189,7 +221,9 @@ class PolicySource(Contract):
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> PolicySource:
-        value = _mapping(value, "policy_source")
+        value = _mapping(
+            value, "policy_source", frozenset({"source_id", "source_type", "source_version"})
+        )
         return cls(
             source_id=_text(value.get("source_id"), "source_id"),
             source_type=_enum(SourceType, value.get("source_type"), "source_type"),
@@ -205,7 +239,11 @@ class SourceControlMapping(Contract):
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> SourceControlMapping:
-        value = _mapping(value, "source_control_mapping")
+        value = _mapping(
+            value,
+            "source_control_mapping",
+            frozenset({"control_key", "resource_type", "source_reference"}),
+        )
         return cls(
             source_reference=SourceReference.from_dict(value.get("source_reference")),
             resource_type=_text(value.get("resource_type"), "resource_type"),
@@ -229,7 +267,25 @@ class Rule(Contract):
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> Rule:
-        value = _mapping(value, "rule")
+        value = _mapping(
+            value,
+            "rule",
+            frozenset(
+                {
+                    "control_key",
+                    "evaluation_type",
+                    "remediation_type",
+                    "requirement",
+                    "resource_type",
+                    "rule_id",
+                    "severity",
+                    "source_references",
+                    "source_type",
+                    "status",
+                    "version",
+                }
+            ),
+        )
         rule_id = _rule_id(value.get("rule_id"))
         raw_references = value.get("source_references")
         if (
@@ -252,7 +308,7 @@ class Rule(Contract):
             evaluation_type=_enum(EvaluationType, value.get("evaluation_type"), "evaluation_type"),
             severity=_enum(Severity, value.get("severity"), "severity"),
             requirement=_text(value.get("requirement"), "requirement"),
-            remediation_type=_text(value.get("remediation_type"), "remediation_type"),
+            remediation_type=_token(value.get("remediation_type"), "remediation_type"),
         )
 
     @property
@@ -270,7 +326,11 @@ class RuleApproval(Contract):
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> RuleApproval:
-        value = _mapping(value, "rule_approval")
+        value = _mapping(
+            value,
+            "rule_approval",
+            frozenset({"approved_at", "approved_by", "rule_content_hash", "rule_id", "version"}),
+        )
         return cls(
             rule_id=_rule_id(value.get("rule_id")),
             version=_positive_int(value.get("version"), "version"),
@@ -291,7 +351,7 @@ class RulePin(Contract):
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> RulePin:
-        value = _mapping(value, "rule_pin")
+        value = _mapping(value, "rule_pin", frozenset({"rule_id", "version"}))
         return cls(
             rule_id=_rule_id(value.get("rule_id")),
             version=_positive_int(value.get("version"), "version"),
@@ -310,7 +370,11 @@ class PolicyProfile(Contract):
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> PolicyProfile:
-        value = _mapping(value, "policy_profile")
+        value = _mapping(
+            value,
+            "policy_profile",
+            frozenset({"policy_profile_id", "policy_profile_version", "rule_pins"}),
+        )
         raw_pins = value.get("rule_pins")
         if not isinstance(raw_pins, Sequence) or isinstance(raw_pins, (str, bytes)) or not raw_pins:
             raise ContractValidationError("rule_pins must be a non-empty array")
@@ -336,7 +400,9 @@ class AdminSettingsSnapshotReference(Contract):
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> AdminSettingsSnapshotReference:
-        value = _mapping(value, "admin_settings_snapshot_reference")
+        value = _mapping(
+            value, "admin_settings_snapshot_reference", frozenset({"admin_settings_snapshot_hash"})
+        )
         return cls(
             admin_settings_snapshot_hash=_hash(
                 value.get("admin_settings_snapshot_hash"), "admin_settings_snapshot_hash"
@@ -355,7 +421,20 @@ class EffectiveRuleSet(Contract):
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> EffectiveRuleSet:
-        value = _mapping(value, "effective_rule_set")
+        value = _mapping(
+            value,
+            "effective_rule_set",
+            frozenset(
+                {
+                    "admin_settings_snapshot_hash",
+                    "phase",
+                    "policy_profile_id",
+                    "policy_profile_version",
+                    "rule_set_hash",
+                    "rules",
+                }
+            ),
+        )
         raw_rules = value.get("rules")
         if not isinstance(raw_rules, Sequence) or isinstance(raw_rules, (str, bytes)):
             raise ContractValidationError("effective rules must be an array")
@@ -392,7 +471,11 @@ class PolicyEvidence(Contract):
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> PolicyEvidence:
-        value = _mapping(value, "policy_evidence")
+        value = _mapping(
+            value,
+            "policy_evidence",
+            frozenset({"evidence_id", "excerpt", "locator", "source_reference"}),
+        )
         return cls(
             evidence_id=_text(value.get("evidence_id"), "evidence_id"),
             source_reference=SourceReference.from_dict(value.get("source_reference")),
@@ -408,7 +491,7 @@ class PolicyQuestion(Contract):
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> PolicyQuestion:
-        value = _mapping(value, "policy_question")
+        value = _mapping(value, "policy_question", frozenset({"allowed_source_ids", "question"}))
         raw_sources = value.get("allowed_source_ids")
         if (
             not isinstance(raw_sources, Sequence)
@@ -433,7 +516,7 @@ class PolicyAnswer(Contract):
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> PolicyAnswer:
-        value = _mapping(value, "policy_answer")
+        value = _mapping(value, "policy_answer", frozenset({"answer", "evidence", "limitations"}))
         raw_evidence = value.get("evidence", ())
         raw_limitations = value.get("limitations", ())
         if not isinstance(raw_evidence, Sequence) or isinstance(raw_evidence, (str, bytes)):
@@ -480,7 +563,22 @@ class RuleEvaluationMetric(Contract):
 
     @classmethod
     def from_dict(cls, value: Mapping[str, Any]) -> RuleEvaluationMetric:
-        value = _mapping(value, "rule_evaluation_metric")
+        value = _mapping(
+            value,
+            "rule_evaluation_metric",
+            frozenset(
+                {
+                    "evaluation_status",
+                    "execution_status",
+                    "resource_id",
+                    "rule_id",
+                    "rule_version",
+                    "severity",
+                    "source_id",
+                    "source_type",
+                }
+            ),
+        )
         execution_status = _enum(ExecutionStatus, value.get("execution_status"), "execution_status")
         raw_status = value.get("evaluation_status")
         evaluation_status = (

@@ -27,6 +27,7 @@ from ..canonical_document import (
     SourceLocator,
 )
 from .base import DocumentLoader, ExtractionError
+from .office_xml import parse_office_xml
 
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 DOCUMENT_PART = "word/document.xml"
@@ -83,12 +84,7 @@ def _read_body(content: bytes) -> ElementTree.Element:
     except zipfile.BadZipFile as exc:
         raise ExtractionError("DOCX 컨테이너를 열 수 없다") from exc
 
-    if b"<!DOCTYPE" in payload or b"<!ENTITY" in payload:
-        raise ExtractionError("DTD/Entity가 포함된 DOCX는 처리하지 않는다")
-    try:
-        root = ElementTree.fromstring(payload)
-    except ElementTree.ParseError as exc:
-        raise ExtractionError("word/document.xml을 파싱할 수 없다") from exc
+    root = parse_office_xml(payload, DOCUMENT_PART)
 
     body = root.find(f"{W}body")
     if body is None:

@@ -137,6 +137,19 @@ class _Node:
     path: str = ""
 
 
+# DOM 중첩 상한.
+#
+# `_walk`/`_emit`은 서로 재귀하고 `_inline_text`, `_raw_text`, `_find`, `_render_table`도
+# 자식으로 재귀한다. 상한이 없으면 몇 KB짜리 중첩 HTML 하나가 RecursionError를 내는데,
+# 이는 LoaderError 계약 밖이라 거부도 경고도 아닌 크래시가 된다. 신뢰할 수 없는 업로드
+# 경로이므로 Tree를 만드는 시점에서 한 번 막는다. 여기서 막으면 아래 모든 walker가 함께
+# 보호되고, walker를 새로 추가할 때 가드를 빠뜨릴 여지도 없다.
+#
+# 실제 사내 규정 문서는 표 안의 목록까지 세어도 수십 단계를 넘지 않는다. 100은 정상 문서를
+# 자르지 않으면서 walker 두 개가 겹쳐도(100 x 2 프레임) Python 기본 재귀 한도 안에 든다.
+MAX_DOM_DEPTH = 100
+
+
 class _TreeParser(HTMLParser):
     """관대한 파서. 닫히지 않은 tag를 만나도 남은 문서를 버리지 않는다."""
 
@@ -153,6 +166,8 @@ class _TreeParser(HTMLParser):
         while len(self._stack) > 1 and tag in _IMPLIED_CLOSE.get(self._stack[-1].tag, ()):
             self._stack.pop()
             self._counts.pop()
+        if len(self._stack) > MAX_DOM_DEPTH:
+            raise ExtractionError(f"HTML 중첩이 상한을 넘었다: {MAX_DOM_DEPTH}단계 (tag={tag})")
         node = _Node(tag=tag, attrs={key: value or "" for key, value in attrs})
         parent = self._stack[-1]
         counts = self._counts[-1]
@@ -193,6 +208,10 @@ class HtmlLoader(DocumentLoader):
         try:
             parser.feed(raw_text)
             parser.close()
+        except ExtractionError:
+            # ExtractionError는 ValueError 계열이라 아래 handler가 삼킨다. 중첩 상한처럼
+            # 구체적인 사유가 "파싱할 수 없다"로 뭉개지지 않게 그대로 올린다.
+            raise
         except (AssertionError, ValueError) as exc:  # 손상된 markup
             raise ExtractionError("HTML을 파싱할 수 없다") from exc
 

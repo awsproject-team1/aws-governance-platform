@@ -31,6 +31,8 @@ from packages.governance.sources.loaders import (
     classify_pdf,
     load_text_document,
 )
+from packages.governance.sources.loaders.html import MAX_DOM_DEPTH
+from packages.governance.sources.loaders.office_xml import parse_office_xml
 from packages.governance.sources.segmentation import (
     CanonicalHeadingProfile,
     UnsupportedDocumentError,
@@ -199,9 +201,63 @@ class HtmlLoaderTests(unittest.TestCase):
             [item.content_hash for item in self.document.blocks],
         )
 
+    def test_deeply_nested_markup_is_rejected_instead_of_crashing_the_loader(self):
+        """중첩 상한이 없으면 몇 KB짜리 파일 하나가 RecursionError로 워커를 죽인다.
+
+        RecursionError는 LoaderError 계약 밖이라 거부도 경고도 아닌 크래시가 된다.
+        업로드는 신뢰 경계 밖 입력이므로 계약 안의 실패로 바뀌어야 한다.
+        """
+        deep = f"<html><body>{'<div>' * 500}<p>x</p>{'</div>' * 500}</body></html>"
+        self.assertLess(len(deep.encode("utf-8")), 8 * 1024)
+
+        with self.assertRaises(ExtractionError) as caught:
+            html_document(deep)
+        self.assertIn(str(MAX_DOM_DEPTH), str(caught.exception))
+
+    def test_nesting_below_the_limit_is_still_extracted(self):
+        """상한이 정상 문서를 자르지 않는지 함께 고정한다."""
+        depth = MAX_DOM_DEPTH - 5
+        shallow = f"<html><body>{'<div>' * depth}<p>본문</p>{'</div>' * depth}</body></html>"
+        self.assertIn("본문", block_texts(html_document(shallow)))
+
     def test_dom_locator_points_at_the_element(self):
         heading = self.document.headings()[1]
         self.assertEqual(heading.locator.canonical, "html:dom=html[1]>body[1]>div[1]>h2[1]")
+
+
+class OfficeXmlGuardTests(unittest.TestCase):
+    """OOXML part는 신뢰 경계 밖 입력이다. parser 앞에서 무엇을 막는지 고정한다."""
+
+    DTD = '<?xml version="1.0" encoding="{enc}"?><!DOCTYPE r [<!ENTITY x "boom">]><r>&x;</r>'
+
+    def test_dtd_declaration_is_rejected(self):
+        payload = self.DTD.format(enc="UTF-8").encode("utf-8")
+        with self.assertRaises(ExtractionError) as caught:
+            parse_office_xml(payload, "word/document.xml")
+        self.assertIn("DTD/Entity", str(caught.exception))
+
+    def test_utf16_cannot_smuggle_a_dtd_past_the_byte_check(self):
+        """원시 byte에서 b"<!DOCTYPE"만 찾으면 UTF-16 part가 그대로 통과한다.
+
+        같은 문자열이 byte 수준에서 다르게 보이기 때문이다. 인코딩을 먼저 고정해야
+        DTD 거부가 실제 효력을 갖는다.
+        """
+        for label, encoding in (("BOM 포함", "utf-16"), ("BOM 없음", "utf-16-be")):
+            with self.subTest(label):
+                payload = self.DTD.format(enc="UTF-16").encode(encoding)
+                self.assertNotIn(b"<!DOCTYPE", payload)  # byte 검사는 놓친다
+                with self.assertRaises(ExtractionError) as caught:
+                    parse_office_xml(payload, "word/document.xml")
+                self.assertIn("UTF-8", str(caught.exception))
+
+    def test_declared_non_utf8_encoding_is_rejected(self):
+        payload = '<?xml version="1.0" encoding="ISO-8859-1"?><r>x</r>'.encode("latin-1")
+        with self.assertRaises(ExtractionError):
+            parse_office_xml(payload, "word/document.xml")
+
+    def test_plain_utf8_part_still_parses(self):
+        root = parse_office_xml(b'<?xml version="1.0" encoding="UTF-8"?><r>ok</r>', "part.xml")
+        self.assertEqual(root.text, "ok")
 
 
 class DocxLoaderTests(unittest.TestCase):

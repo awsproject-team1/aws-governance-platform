@@ -23,6 +23,18 @@ def rule_semantic_content(rule: Rule) -> Mapping[str, Any]:
     content = rule.to_dict()
     for field in ("rule_id", "version", "status"):
         content.pop(field)
+    # `canonical_json`의 `sort_keys`는 dict key만 정렬하고 배열 순서는 그대로 둔다.
+    # 정렬하지 않으면 근거가 같고 순서만 다른 두 Rule이 서로 다른 hash를 갖게 되어,
+    # 재직렬화가 순서를 바꾸는 것만으로 승인 binding이 깨진다.
+    content["source_references"] = sorted(
+        content["source_references"],
+        key=lambda item: (
+            item["document_id"],
+            item["document_version"],
+            item["section"],
+            item["content_hash"],
+        ),
+    )
     return content
 
 

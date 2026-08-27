@@ -5,6 +5,7 @@ from pathlib import Path
 from packages.contracts.governance import (
     AdminSettingsSnapshotReference,
     AssessmentPhase,
+    ContractValidationError,
     Control,
     EffectiveRuleSet,
     PolicyAnswer,
@@ -60,6 +61,53 @@ class GovernanceToAssessmentContractTests(unittest.TestCase):
         for item in cls.rule_fixture["rules"]:
             cls.rules.add(Rule.from_dict(item))
 
+    def test_unknown_fields_are_rejected_instead_of_being_discarded(self):
+        """조용히 버리면 Consumer의 오타가 오류가 아니라 잘못된 값이 된다.
+
+        `sevirity`가 버려지면 severity는 payload가 우연히 담고 있던 값을 유지한다.
+        severity는 scoring 가중치이므로 결과는 아무 오류 없이 잘못된 준수 점수다.
+        """
+        base = dict(self.rule_fixture["rules"][0])
+        for label, extra in (
+            ("오타", {"sevirity": "LOW"}),
+            ("권한 상승 시도", {"admin_override": True}),
+        ):
+            with self.subTest(label):
+                with self.assertRaises(ContractValidationError) as caught:
+                    Rule.from_dict({**base, **extra})
+                self.assertIn("unknown field", str(caught.exception))
+
+    def test_remediation_type_shape_is_constrained_without_fixing_the_vocabulary(self):
+        """전체 Enum은 Area D와 함께 정할 Open Decision이지만 형식은 지금 고정한다.
+
+        이 값은 승인 semantic hash 안에 있으므로 임의 문자열을 허용하면 승인 binding이
+        영구히 흔들린다.
+        """
+        base = dict(self.rule_fixture["rules"][0])
+        for accepted in ("TERRAFORM_PATCH", "MANUAL", "GUIDE"):
+            with self.subTest(accepted):
+                self.assertEqual(
+                    Rule.from_dict({**base, "remediation_type": accepted}).remediation_type,
+                    accepted,
+                )
+        for rejected in ("terraform patch!!", "<script>x</script>", "terraform_patch"):
+            with self.subTest(rejected):
+                with self.assertRaises(ContractValidationError):
+                    Rule.from_dict({**base, "remediation_type": rejected})
+
+    def test_rule_content_hash_does_not_depend_on_source_reference_order(self):
+        """근거가 같고 순서만 다른 Rule은 같은 승인 hash를 가져야 한다.
+
+        canonical_json의 sort_keys는 dict key만 정렬하고 배열은 그대로 둔다. 정렬하지
+        않으면 재직렬화가 순서를 바꾸는 것만으로 승인 binding이 깨진다.
+        """
+        base = dict(self.rule_fixture["rules"][0])
+        first = base["source_references"][0]
+        second = {**first, "section": "9.9-Z", "content_hash": "sha256:" + "b" * 64}
+        forward = Rule.from_dict({**base, "source_references": [first, second]})
+        reverse = Rule.from_dict({**base, "source_references": [second, first]})
+        self.assertEqual(rule_content_hash(forward), rule_content_hash(reverse))
+
     def test_effective_rule_set_is_stable_structured_input_for_area_c(self):
         profile = PolicyProfile.from_dict(self.profile_fixture["profile"])
         settings = AdminSettingsSnapshotReference.from_dict(self.profile_fixture["admin_settings"])
@@ -68,7 +116,12 @@ class GovernanceToAssessmentContractTests(unittest.TestCase):
         ).to_dict()
         self.assertEqual(effective["policy_profile_version"], 1)
         self.assertEqual(effective["phase"], "PRE_DEPLOY")
-        self.assertRegex(effective["rule_set_hash"], r"^sha256:[0-9a-f]{64}$")
+        # 재현 가능한 rule_set_hash가 이 경계의 핵심 보장이므로 형태가 아니라 값을 고정한다.
+        # 형태만 검사하면 projection이나 정렬이 바뀌어도 CI가 조용히 통과한다.
+        self.assertEqual(
+            effective["rule_set_hash"],
+            self.profile_fixture["expected_rule_set_hash"]["PRE_DEPLOY"],
+        )
         self.assertEqual(len(effective["rules"]), 3)
         for rule in effective["rules"]:
             self.assertIsInstance(rule["version"], int)

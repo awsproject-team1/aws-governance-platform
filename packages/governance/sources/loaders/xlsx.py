@@ -27,6 +27,7 @@ from ..canonical_document import (
     SourceLocator,
 )
 from .base import DocumentLoader, ExtractionError
+from .office_xml import parse_office_xml
 
 WORKBOOK_PART = "xl/workbook.xml"
 WORKBOOK_RELS_PART = "xl/_rels/workbook.xml.rels"
@@ -202,12 +203,7 @@ def _read_xml_part(archive: zipfile.ZipFile, part_name: str) -> ElementTree.Elem
         payload = archive.read(part_name)
     except KeyError as exc:
         raise ExtractionError(f"XLSX part를 찾을 수 없다: {part_name}") from exc
-    if b"<!DOCTYPE" in payload or b"<!ENTITY" in payload:
-        raise ExtractionError(f"DTD/Entity가 포함된 XLSX part는 처리하지 않는다: {part_name}")
-    try:
-        return ElementTree.fromstring(payload)
-    except ElementTree.ParseError as exc:
-        raise ExtractionError(f"XLSX XML을 파싱할 수 없다: {part_name}") from exc
+    return parse_office_xml(payload, part_name)
 
 
 def _read_sheets(archive: zipfile.ZipFile) -> tuple[_Sheet, ...]:

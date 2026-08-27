@@ -131,6 +131,12 @@ class ProfileAndEffectiveRuleSetTests(unittest.TestCase):
             identities = [f"{rule.rule_id}@{rule.version}" for rule in first.rules]
             self.assertEqual(identities, expected)
             self.assertEqual(first, second)
+            # 결정론적 재현의 기준은 선택된 Rule 목록이 아니라 rule_set_hash다.
+            # 값을 고정하지 않으면 projection이 바뀌어도 이 test가 통과한다.
+            self.assertEqual(
+                first.rule_set_hash,
+                self.fixture["expected_rule_set_hash"][raw_phase],
+            )
             self.assertEqual(
                 first.admin_settings_snapshot_hash,
                 self.settings.admin_settings_snapshot_hash,

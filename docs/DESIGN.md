@@ -109,7 +109,7 @@ Agent Runtime은 Policy Q&A, IaC 의미 비교, Remediation 생성 같은 추론
 고객이 업로드하는 사내 규정은 서식이 고정되어 있지 않으므로 파일을 그대로 LLM에 넣지 않고 형식 지식을 Loader 한 곳에 가둔다. 경계는 `업로드 보안 검사 → Format별 Document Loader → Canonical Policy Document → 결정론적 Segmentation → Frozen Document → Knowledge Index`다.
 
 - `sources/upload.py`: 확장자 allowlist, 실제 signature 확인, Macro/암호화/압축폭탄 차단, 파일명 재생성. Parser에 검사되지 않은 바이트가 닿지 않게 한다.
-- `sources/loaders/`: MD/TXT, HTML, DOCX, 텍스트 PDF Loader와 XLSX Control Matrix Loader. 형식별 위치 정보를 `locator`에 보존한다. PDF는 실제 객체를 열어 압축 Object Stream도 처리하며, 이미지 전용 페이지가 섞이면 부분 추출 대신 OCR 필요 상태로 실패한다. XLSX는 header와 데이터 행을 TABLE Block으로 만들고 수식을 실행하지 않은 채 수식 문자열과 캐시값을 함께 보존한다.
+- `sources/loaders/`: MD/TXT, HTML, DOCX, 텍스트 PDF Loader와 XLSX Control Matrix Loader. HTML은 DOM 중첩 상한을 두어 깊게 중첩된 몇 KB짜리 파일이 `RecursionError`로 Loader를 죽이지 않고 `ExtractionError`가 되게 한다. DOCX/XLSX의 XML part는 `loaders/office_xml.py` 한 곳을 거치며, DTD/Entity 선언을 거부하기 전에 인코딩을 UTF-8로 고정한다. 원시 byte에서만 선언을 찾으면 UTF-16 part가 그대로 통과하기 때문이다. 형식별 위치 정보를 `locator`에 보존한다. PDF는 실제 객체를 열어 압축 Object Stream도 처리하며, 이미지 전용 페이지가 섞이면 부분 추출 대신 OCR 필요 상태로 실패한다. XLSX는 header와 데이터 행을 TABLE Block으로 만들고 수식을 실행하지 않은 채 수식 문자열과 캐시값을 함께 보존한다.
 - `sources/canonical_document.py`: 형식 비종속 Block 표현. 이후 단계는 어떤 형식에서 왔는지 몰라도 동작한다.
 - `sources/segmentation.py`: 교체 가능한 Structure Profile과 문서 비종속 정규화·해시.
 - `sources/ingestion.py`: `document_version` 단위 동결. Parser/Profile 정체성을 동결 기준에 포함해 Parser 변경이 조용한 근거 변경이 되지 않게 한다.
