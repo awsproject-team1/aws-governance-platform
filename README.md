@@ -37,8 +37,8 @@ React Frontend와 API Gateway/Lambda Backend가 Cognito 인증을 사용합니�
 
 ## Repository 구조
 
-- `apps/`: Frontend와 Backend 실행 영역
-- `packages/contracts/`: 향후 API/Domain/Structured Output Contract 코드의 실행 정본; 현재는 placeholder
+- `apps/`: Frontend와 Backend 실행 영역. Backend의 `auth/`, `jobs/`, `repositories/`는 인증, lifecycle, persistence 경계를 구현한다.
+- `packages/contracts/`: API/Domain/Structured Output Contract 코드의 실행 정본
 - `packages/governance/`: Rule, Control, Profile, Scoring 등 Governance Domain
 - `agent/`: LangGraph, Domain Agent, Runtime, Validator
 - `tools/`: Policy/Evidence/GitHub/AWS 외부 경계
@@ -52,7 +52,7 @@ React Frontend와 API Gateway/Lambda Backend가 Cognito 인증을 사용합니�
 
 ## 개발 시작점
 
-현재 단계는 Repository/문서/Python/Backend Package Bootstrap과 최소 MVP Transport Contract까지 구현됐습니다. 실행 가능한 제품 Application, 전체 Domain Contract, 제품 Lambda Handler, 인증, Agent, Tool, AWS Resource는 아직 없습니다. `_bootstrap_probe`는 배포 대상이 아닌 Package 검증용입니다.
+현재 단계는 Repository/문서/Python/Backend Package Bootstrap, 최소 MVP Transport Contract, Cognito claim/RBAC, Job lifecycle과 DynamoDB/S3 repository adapter 경계까지 구현됐습니다. 실제 제품 Lambda Handler, API Gateway Event/Response Adapter, Agent, Tool, AWS Resource와 Infrastructure wiring은 아직 없습니다. `_bootstrap_probe`는 배포 대상이 아닌 Package 검증용입니다.
 
 1. [제품 요구사항](docs/PRD.md)과 [기술 설계](docs/DESIGN.md)를 읽습니다.
 2. [Contract](docs/CONTRACTS.md), [API](docs/API.md), [Naming](docs/NAMING.md)을 확인합니다.
@@ -84,19 +84,22 @@ python -m unittest discover --start-directory tests/contract --pattern "test_*.p
 python -m unittest discover --start-directory tests/security --pattern "test_*.py" --verbose
 ```
 
-Python CI는 동일한 명령을 실행하며, 모든 Pull Request에는 별도 Secret Scan이 실행됩니다. Contract discovery는 Job polling, Assessment acceptance/phase, public error envelope의 실행 가능한 최소 Transport Contract를 검증합니다. Security discovery는 Cognito Access Token claim과 action별 RBAC의 fail-closed 경계를 검증합니다. 제품 Lambda Handler, API Gateway Event/Response Adapter, persistence 또는 AWS Resource는 선택하지 않습니다.
+Python CI는 동일한 명령을 실행하며, 모든 Pull Request에는 별도 Secret Scan이 실행됩니다. Contract discovery는 Job polling, Assessment acceptance/phase, public error envelope의 실행 가능한 최소 Transport Contract를 검증합니다. Security discovery는 Cognito Access Token claim/action RBAC와 Job 소유권/provider 오류 정제의 fail-closed 경계를 검증합니다. 제품 Lambda Handler, API Gateway Event/Response Adapter와 실제 AWS resource wiring은 선택하지 않습니다.
 
 ## Backend Lambda Bootstrap
 
-Backend는 [ADR 0003](docs/decisions/0003-backend-lambda-bootstrap.md)에 따라 Framework-free Python package 경계를 사용합니다.
+Backend는 [ADR 0003](docs/decisions/0003-backend-lambda-bootstrap.md)에 따라 Framework-free Python package 경계를 사용합니다. Job lifecycle과 persistence 결정은 [ADR 0005](docs/decisions/0005-job-lifecycle-boundary.md), [ADR 0006](docs/decisions/0006-dynamodb-s3-repository-boundary.md)를 따릅니다.
 
 ```text
 apps/backend/
 ├─ __init__.py
+├─ auth/                 # verified Cognito claims와 action RBAC
+├─ jobs/                 # internal Job lifecycle, ownership, error projection
+├─ repositories/         # AWS-neutral ports, injected DynamoDB/S3 adapters
 ├─ handlers/
 │  ├─ __init__.py
 │  └─ _bootstrap_probe.py  # private, non-deployable
-└─ requirements.txt       # exact runtime dependency pins
+└─ requirements.txt      # exact runtime dependency pins
 ```
 
 `_bootstrap_probe`는 제품 Lambda Handler가 아닙니다. 다음 명령은 API Gateway Contract 없이 import/invocation 경계만 확인합니다.

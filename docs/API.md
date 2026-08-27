@@ -331,6 +331,8 @@ Finding, Report, Patch, Plan 본문은 이 API가 반환하지 않는다.
 
 실행 가능한 응답 정본은 `packages.contracts.JobResponse`이며 상태와 단계는 각각 `JobStatus`, `JobCurrentStep`으로 제한한다. `job_type`과 연결 ID는 opaque non-empty string이고 연결 전 ID는 `null`이다. Job 내부 `error`는 공개 `ApiError` detail 또는 `null`이며 `ApiErrorResponse`의 최상위 envelope를 중첩하지 않는다. 닫힌 `job_type` 집합과 `QUEUED`의 기본 `current_step`은 Open Decision이다.
 
+내부 Job의 `requested_by`와 `revision`은 이 응답에 포함하지 않는다. Backend는 action-level `READ_JOB` 확인 뒤 User에게 `requested_by`가 자신의 Cognito subject와 같은 Job만 반환하고 Admin에게는 모든 Job 조회를 허용한다. 존재 여부와 소유권 거부를 HTTP에서 구분할지는 Handler Contract에서 확정한다.
+
 ## Error
 
 Backend API의 최소 오류 응답은 다음 형식이다.
@@ -357,7 +359,7 @@ Backend API의 최소 오류 응답은 다음 형식이다.
 | `500` | `INTERNAL_ERROR` |
 | `502` | `EXTERNAL_SERVICE_ERROR` |
 
-Tool 내부 오류는 더 풍부한 `error_code`, `retryable`, `source`, `details`를 사용할 수 있지만 외부 API 최소 Contract와 혼합하지 않는다. AWS/GitHub/LLM 실패는 Governance `FAIL`이 아니라 Workflow 실행 오류다.
+Tool 내부 오류는 더 풍부한 `error_code`, `retryable`, `source`, `details`를 사용할 수 있지만 외부 API 최소 Contract와 혼합하지 않는다. AWS/GitHub/LLM 실패는 Governance `FAIL`이 아니라 Workflow 실행 오류다. Backend는 provider exception text를 응답에 복사하지 않고 lifecycle/CAS 충돌을 `INVALID_STATE`, repository provider 실패를 `EXTERNAL_SERVICE_ERROR`, 알 수 없는 예외를 `INTERNAL_ERROR`의 고정 message로 정제한다. 실제 Handler의 HTTP mapping과 endpoint별 닫힌 code 집합은 해당 Handler Contract에서 확정한다.
 
 ## 외부 Interface
 

@@ -58,6 +58,14 @@ Backend는 정책 의미, Resource × Rule 판정, Terraform 수정·배포 로�
 
 Backend Runtime의 직접 Dependency는 `apps/backend/requirements.txt`에 정확한 Version으로 고정하고 개발 Tool은 root `requirements-dev.txt`에 둔다. Lambda ZIP stage root에는 `apps/backend`와 승인된 first-party import closure만 같은 package 경로로 배치하고 third-party dependency는 stage root에 설치한다. 전체 Monorepo, Test, 문서, Frontend를 Artifact에 복사하지 않는다. Lambda Layer, Python build backend, 실제 ZIP 생성 자동화는 첫 제품 Handler와 배포 경계가 확정될 때 재검토한다.
 
+### Job Application과 Repository 경계
+
+`apps.backend.jobs`는 immutable 내부 Job, 닫힌 최소 상태 전이, revision 증가, write-once Domain ID, 소유권 검사와 public error sanitation을 담당한다. 공개 `JobResponse`에는 내부 `requested_by`와 `revision`을 투영하지 않는다. 상세 lifecycle은 [ADR 0005](decisions/0005-job-lifecycle-boundary.md)를 따른다.
+
+`apps.backend.repositories`는 AWS-independent Job/Artifact port와 injected DynamoDB/S3 adapter를 제공한다. Application은 Boto3 응답, DynamoDB item map, S3 URL 또는 provider exception을 받지 않는다. DynamoDB Job update는 저장 revision 조건을 원자적으로 재검사하고 S3 Artifact는 raw bytes의 SHA-256 주소와 `If-None-Match: *`로 overwrite를 막는다. Adapter는 client와 resource를 생성하거나 환경변수에서 찾지 않고 호출자가 주입한다. 현재 SDK를 직접 import하는 composition root가 없으므로 runtime dependency는 추가하지 않으며, 실제 Lambda consumer는 SDK를 정확한 version으로 package해야 한다. 상세 결정은 [ADR 0006](decisions/0006-dynamodb-s3-repository-boundary.md)를 따른다.
+
+제품 Handler, table/bucket 이름, 환경변수, GSI, 목록/페이지네이션, TTL, retry/backoff, presigned URL과 Artifact type prefix는 Open Decision이다.
+
 ## Cognito
 
 Admin과 User는 동일 Cognito User Pool과 로그인 화면을 사용한다. API Gateway HTTP API JWT Authorizer가 서명, issuer, token 시간 유효성과 구성된 audience/client binding을 검증한 뒤 Backend를 호출한다. 실제 User Pool, App Client, issuer, audience와 Route/Scope 배포 설정은 Infrastructure 구현 전에 확정해야 한다.
@@ -187,7 +195,11 @@ LLM 출력, 검색 문서, Terraform Patch는 신뢰하지 않는다. Structured
 - S3: IaC Snapshot, Policy Evidence, Raw AWS Result, Report, Patch/Diff, Plan, Apply Result
 - LangGraph Checkpoint: 실행 위치와 interrupt/resume용 최소 상태; Application Data 정본이 아님
 
-DynamoDB는 ID/상태/관계/조회 메타데이터, S3는 큰 원본·Artifact를 담당한다. 구체 Key와 Prefix는 Contract 구현과 함께 검증하며 [CONTRACTS.md](CONTRACTS.md)와 동기화한다.
+DynamoDB는 ID/상태/관계/조회 메타데이터, S3는 큰 원본·Artifact를 담당한다. Job item은 `job_id` key와 내부 revision을 사용하며 생성은 ID 부재, 갱신은 expected revision 일치를 조건으로 한다. Adapter는 현재 Job과 lifecycle이 산출할 수 있는 next state를 대조해 owner, job type, write-once ID와 terminal 상태 우회를 거부한 뒤 전체 Job item을 교체한다. condition failure는 duplicate 또는 revision conflict로 변환한다.
+
+Artifact port는 raw bytes를 `sha256:<digest>`로 식별하고 S3 adapter 내부에서 `sha256/<digest>` key로 변환한다. Put은 `If-None-Match: *`를 사용하며 precondition failure 시 기존 bytes의 digest를 재검증해 같은 내용만 idempotent success로 처리한다. Bucket, S3 key와 provider 응답은 public contract가 아니다.
+
+Table/bucket 이름과 환경변수, GSI, 목록/페이지네이션, TTL/보존, retry, presigned URL, artifact-type prefix는 Open Decision이다. 상세 persistence 결정은 [ADR 0006](decisions/0006-dynamodb-s3-repository-boundary.md)를 따른다.
 
 ## Observability
 

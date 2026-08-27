@@ -44,7 +44,21 @@ APPLY
 POST_DEPLOY_VERIFICATION
 ```
 
-실행 가능한 정본은 `packages.contracts.JobStatus`, `JobCurrentStep`, `JobResponse`다. `job_type`과 ID는 별도 Prefix나 닫힌 Enum을 강제하지 않는 opaque non-empty string이다. `JobResponse.error`는 `ApiError` detail 또는 `null`이며 내부 Tool 오류 세부정보를 포함하지 않는다. `job_type`의 닫힌 집합, `QUEUED`의 기본 `current_step`, Job Schema version은 Open Decision으로 유지한다.
+실행 가능한 공개 정본은 `packages.contracts.JobStatus`, `JobCurrentStep`, `JobResponse`다. `job_type`과 ID는 별도 Prefix나 닫힌 Enum을 강제하지 않는 opaque non-empty string이다. `JobResponse.error`는 `ApiError` detail 또는 `null`이며 내부 Tool 오류 세부정보를 포함하지 않는다. `job_type`의 닫힌 집합, `QUEUED`의 기본 `current_step`, Job Schema version은 Open Decision으로 유지한다.
+
+Backend 내부 정본은 `apps.backend.jobs.Job`이며 공개 응답과 분리한다. 생성자는 Workflow가 `initial_step`을 명시하도록 요구하고 `QUEUED`, revision `0`에서 시작한다. 내부 `requested_by`는 Cognito subject를 보존하지만 `JobResponse`에는 노출하지 않는다. User는 자신의 Job만 읽고 Admin은 모든 Job을 읽을 수 있으며, 이 resource ownership 검사는 action-level `READ_JOB` 권한 검사와 함께 적용한다.
+
+최소 상태 전이는 다음으로 닫는다.
+
+```text
+QUEUED          → RUNNING | FAILED | CANCELLED
+RUNNING         → RUNNING | WAITING_REVIEW | WAITING_APPROVAL | COMPLETED | FAILED | CANCELLED
+WAITING_REVIEW  → RUNNING | FAILED | CANCELLED
+WAITING_APPROVAL→ RUNNING | FAILED | CANCELLED
+COMPLETED | FAILED | CANCELLED → terminal
+```
+
+모든 성공 전이는 revision을 정확히 1 증가시키며 `RUNNING → RUNNING`은 진행 단계 갱신에 사용한다. `FAILED`는 sanitized `ApiError`가 필수이고 다른 상태는 error를 가질 수 없다. `assessment_id`, `remediation_id`, `deployment_id`는 최초 연결 후 변경하거나 제거할 수 없다. Repository update는 저장된 현재 Job에서 lifecycle next state를 다시 산출해 직접 생성한 모델이 owner, job type, write-once ID 또는 terminal 상태를 우회하지 못하게 한다. retry/backoff, terminal resume, timestamp, 보존기간은 Open Decision이다. 상세 결정은 [ADR 0005](decisions/0005-job-lifecycle-boundary.md)를 따른다.
 
 ## Control
 
@@ -196,6 +210,8 @@ Backend 외부 API 최소 Contract:
 
 Agent/Tool/Code 내부 오류에는 안정적인 code, 사용자용 message, retry 가능 여부, source, 선택 details가 필요하다. 내부 필드명 `error_code`와 외부 API `code`는 경계별 Contract로 구분한다. 예외 원문과 Secret을 외부 또는 로그에 노출하지 않는다.
 
+`apps.backend.jobs.sanitize_public_error`는 exception message를 복사하지 않고 신뢰된 category만 고정 응답으로 변환한다. lifecycle/CAS/duplicate 충돌은 `INVALID_STATE`, repository provider 실패는 `EXTERNAL_SERVICE_ERROR`, 그 밖의 예외는 `INTERNAL_ERROR`로 정제한다. 이 최소 mapping은 Handler별 닫힌 error code 집합을 확정하지 않으며 provider response, request ID, table/bucket/key, credential-like 값을 공개 detail에 포함하지 않는다.
+
 ## Scoring과 Coverage Contract
 
 Severity Weight:
@@ -218,19 +234,17 @@ LOW      = 1
 
 ## Artifact Reference
 
-S3 Artifact를 전달하는 공통 개념은 다음과 같다.
+Backend 내부 Artifact port는 S3 위치 대신 content digest를 전달한다.
 
 ```json
 {
-  "artifact_ref": {
-    "type": "S3",
-    "bucket": "...",
-    "key": "..."
-  }
+  "content_digest": "sha256:<64-lowercase-hex>"
 }
 ```
 
-Bucket 이름을 외부 Contract에 고정하지 않는다. 정확한 공통 타입과 API 노출 방식은 Schema 구현 시 확정한다.
+Digest는 raw bytes의 SHA-256이며 S3 adapter만 이를 `sha256/<hex>` object key로 변환한다. 새 object는 `If-None-Match: *` 조건으로 작성해 overwrite를 금지한다. 같은 bytes의 재시도는 기존 object를 읽어 digest가 일치할 때만 idempotent success이며, 다른 bytes가 있으면 collision으로 거부한다. 정확한 실행 정본은 `apps.backend.repositories.ArtifactReference`와 `ArtifactStore`다.
+
+이 내부 reference는 공개 Report API 응답을 확정하지 않는다. Bucket 이름, S3 key, URL을 외부 Contract에 고정하지 않으며 presigned URL과 artifact-type prefix는 Open Decision이다.
 
 ## Domain 관계
 
