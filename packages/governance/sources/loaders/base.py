@@ -36,6 +36,14 @@ class LoaderNotImplementedError(LoaderError):
     """형식은 알지만 Loader가 아직 없다. 미구현을 성공으로 위장하지 않는다."""
 
 
+class LoaderDependencyError(LoaderError):
+    """Loader는 있지만 Runtime 의존성이 설치되지 않았다.
+
+    미구현이나 잘못된 문서와 구분한다. 이건 업로드의 문제가 아니라 배포 구성의
+    문제이므로 대응이 "다른 파일을 올린다"가 아니라 "의존성을 설치한다"이다.
+    """
+
+
 class ExtractionError(LoaderError):
     """원문을 열었지만 구조를 꺼낼 수 없다."""
 

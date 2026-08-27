@@ -8,8 +8,6 @@ dependencies = []
 [tool.ruff]
 target-version = "py314"
 line-length = 100
-# 구버전 문서 체계 스냅샷은 리포 밖에 두지만, 실수로 복사되어도 Lint 대상이 되지 않게 한다.
-extend-exclude = ["before"]
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I", "UP", "B"]

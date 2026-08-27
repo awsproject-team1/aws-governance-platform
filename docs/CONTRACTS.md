@@ -303,7 +303,7 @@ Rule Candidate의 Structured Output은 `resource_type`, `control_key`, `evaluati
 - Consumer: Finding 생성, Report, Scoring, Audit
 - Required: `assessment_result_id`, `assessment_id`, `resource_id`, `control_key`, `rule_id`, `rule_version`, `source_type`, `evaluation_status`, `severity`, `execution_status`
 - Conditional: Evidence, explanation, error/reference의 정확한 필드는 Open Decision
-- Governance status: `PASS`, `FAIL`, `MANUAL_REVIEW`, `N/A`; 실행 오류일 때는 `null`
+- Governance status: `PASS`, `FAIL`, `MANUAL_REVIEW`, `NOT_APPLICABLE`; 실행 오류일 때는 `null`
 - Execution status: 최소 `SUCCESS`, `ERROR`
 - Validation: 실제 Rule/Version/Source/Enum을 검증한다. Tool/Agent 오류는 `evaluation_status = null`, `execution_status = ERROR`로 표현하며 `FAIL`을 만들지 않는다.
 - Versioning: Rule Version과 Assessment 재현성 pin을 따른다.
@@ -395,7 +395,7 @@ LOW      = 1
 - Source Score denominator: `PASS + FAIL` 단위의 Severity Weight 합
 - Rule Evaluation Coverage denominator: `PASS + FAIL + MANUAL_REVIEW`
 - Coverage numerator: `PASS + FAIL`
-- `N/A`, `EXECUTION_ERROR`: Score/Coverage 분모에서 제외하고 별도 보고
+- `NOT_APPLICABLE`, `EXECUTION_ERROR`: Score/Coverage 분모에서 제외하고 별도 보고
 - 계산 경계: Policy Source별 독립 partition
 - 금지: Cross-Source Overall Score, Control Group 최고 Severity 병합, Score 단독 배포 Gate
 

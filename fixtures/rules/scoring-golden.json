@@ -69,7 +69,7 @@
       "source_id": "cloud-infra-security-checklist",
       "source_type": "CUSTOMER",
       "severity": "MEDIUM",
-      "evaluation_status": "N/A",
+      "evaluation_status": "NOT_APPLICABLE",
       "execution_status": "SUCCESS"
     },
     {
