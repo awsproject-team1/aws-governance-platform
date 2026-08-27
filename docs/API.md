@@ -103,18 +103,20 @@ Repository 연결·권한 설정 Endpoint는 현재 Workflow Contract에 정의�
 
 ### `POST /assessments`
 
-Purpose: Repository와 Scope를 구조화해 Initial Assessment 시작.
+Purpose: 명시적인 Initial Assessment를 시작한다.
 
 ```json
 {
+  "phase": "INITIAL",
   "repository_id": "repo-001",
-  "scope": {
-    "resource_types": ["aws_s3_bucket"]
-  }
+  "policy_profile_id": "profile-001",
+  "policy_profile_version": 1
 }
 ```
 
-`repository_id`는 필수다. `scope`를 비우거나 전체 지원 범위를 나타내는 표현은 허용할 예정이나 정확한 Scope Schema는 Open Decision이다. Policy Profile은 Workflow의 필수 Context지만 Request에서 `policy_profile_id`를 전달하는 정확한 형태가 최신 API 예시에 누락되어 있으므로 Contract 확정 전 임의 필드를 추가하지 않는다.
+`phase`, `repository_id`, `policy_profile_id`, `policy_profile_version`는 모두 필수이며 unknown field는 거절한다. 이 Endpoint는 현재 `INITIAL`만 허용한다. MVP에는 기본 Profile이 없으므로 Profile ID 또는 version이 없는 요청은 거절한다. A는 transport/type과 호출자의 Profile 사용 권한을 검증하고, B Governance port는 `(policy_profile_id, policy_profile_version)` 존재 및 pin된 Rule의 ACTIVE 상태를 검증한다.
+
+`admin_settings_snapshot_hash`, `scoring_version`, `EffectiveRuleSet`은 client request field가 아니다. A가 start 시점에 Admin Settings snapshot을 저장·hash로 pin한 뒤 B에서 Effective Rule Set과 scoring version을 얻어 C에 전달한다. 현재 Scope의 Resource inventory 및 전체/부분 표현은 D/C 공동 Open Decision이므로 request에 포함하지 않는다.
 
 ```text
 202 Accepted
@@ -127,9 +129,7 @@ Purpose: Repository와 Scope를 구조화해 Initial Assessment 시작.
 }
 ```
 
-`assessment_id`는 실제 단계 진입 시 생성되어 Job 조회에서 노출된다.
-
-실행 가능한 202 응답 정본은 `packages.contracts.AssessmentAcceptedResponse`다. 이 타입은 `job_id`와 고정된 `QUEUED` 상태만 소유한다. Request의 Scope/Profile Schema와 실제 Handler는 Open Decision이므로 아직 실행 가능한 Contract에 포함하지 않는다.
+실행 가능한 공개 정본은 `packages.contracts.AssessmentAcceptedResponse`다. 이 타입은 `job_id`와 고정된 `QUEUED` 상태만 소유하며 `assessment_id` 또는 internal revision을 노출하지 않는다. 실제 Handler와 HTTP `Idempotency-Key` 정책은 별도 A 작업이다.
 
 ### `GET /assessments/{assessment_id}`
 

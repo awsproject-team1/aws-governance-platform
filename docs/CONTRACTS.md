@@ -282,7 +282,16 @@ Rule Candidate의 Structured Output은 `resource_type`, `control_key`, `evaluati
 - Validation: 각 실행에 새 ID를 만들고 과거 기록을 덮어쓰지 않는다. Rule Pin Set, Runtime Settings, Phase를 보존한다.
 - Versioning: Assessment 자체보다 연결된 Profile/Rule/Settings/Scoring Version을 pin한다. Schema version은 Open Decision이다.
 
-현재 실행 가능한 Assessment 정본은 `AssessmentPhase`와 `AssessmentAcceptedResponse`로 제한한다. `AssessmentAcceptedResponse`는 Initial Assessment 요청 수락 시 `job_id`와 고정된 `QUEUED` 상태만 전달한다. Assessment lifecycle status, 전체 Assessment record/projection과 create request의 Scope/Profile Schema는 확정 전까지 문서 Contract로만 유지한다.
+실행 가능한 Assessment transport 정본은 `packages.contracts`의 `AssessmentPhase`, `InitialAssessmentStartRequest`, `AssessmentStartCommand`, `AssessmentStartAcknowledgement`, `AssessmentLinkageConfirmation`, `AssessmentProgressUpdate`, `AssessmentProgressAcknowledgement`, `AssessmentAcceptedResponse`다.
+
+- Public start request는 명시적인 `phase=INITIAL`, `repository_id`, `policy_profile_id`, positive integer `policy_profile_version`을 요구한다. 기본 Profile은 없다. `admin_settings_snapshot_hash`, `scoring_version`, `EffectiveRuleSet`은 server-resolved input이며 client request가 전달하거나 선택할 수 없다.
+- A는 `QUEUED / LOAD_IAC / revision 0` Job을 저장한 뒤, B가 검증·pin한 `EffectiveRuleSet`과 scoring version을 포함한 `AssessmentStartCommand`를 C에 전달한다. Effective Rule Set은 Profile ID/version, phase, Admin Settings snapshot hash, ACTIVE Rule pin, canonical rule-set hash를 함께 보존한다.
+- C는 `job_id`를 start idempotency key로 사용한다. 동일 command 재전달은 같은 `assessment_id` acknowledgement를 반환하고, 다른 command를 같은 Job ID로 재사용하면 거절한다. C는 acknowledgement 후 Assessment를 `ACCEPTED`로 보관하며 A linkage confirmation 전에는 실행하지 않는다.
+- A는 acknowledgement의 동일 `assessment_id`를 `QUEUED / LOAD_IAC / revision 0 → RUNNING / LOAD_IAC / revision 1` 전이에 write-once로 연결한 뒤 `AssessmentLinkageConfirmation`을 C에 보낸다. C는 저장된 동일 `(job_id, assessment_id)` pair의 반복 confirmation을 no-op 성공으로 처리하고 한 번만 실행을 활성화한다.
+- C progress는 ordering용 `expected_revision`과 전송 중복 제거용 opaque `update_id`를 모두 보낸다. A는 `(job_id, update_id)`를 deduplicate한다. exact duplicate는 stale revision을 검사하기 전에 최초 applied revision으로 성공 응답하고, 같은 update ID의 다른 payload는 conflict, 새 update ID의 오래된 revision은 stale conflict다. dedupe record와 Job revision mutation의 원자적 영속화 구현은 A persistence 작업이다.
+- `FAILED` progress는 sanitized `ApiError`를 필수로 하고, 다른 progress status에는 error를 둘 수 없다. public Job polling은 revision, update ID, Effective Rule Set, snapshot hash, scoring version을 노출하지 않는다.
+
+`scope`의 Resource inventory 및 all/empty 표현, IaCSnapshot Reader, dispatch outbox/retry, HTTP `Idempotency-Key`, progress dedupe persistence retention, Assessment lifecycle record/projection은 Open Decision 또는 후속 구현 범위로 유지한다. `AssessmentAcceptedResponse`는 계속 public `job_id`와 fixed `QUEUED`만 전달한다.
 
 ## AssessmentResult / RuleEvaluation
 
