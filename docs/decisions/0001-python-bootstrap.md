@@ -18,6 +18,7 @@ The repository defines Python linting and testing requirements but does not yet 
 - Use Ruff for Python linting and formatting, configured in the root `pyproject.toml`.
 - Run Python lint, format checking, and unit tests in a path-filtered GitHub Actions workflow.
 - Run Gitleaks CLI 8.30.1 for every pull request targeting `dev` or `main`; verify the downloaded Linux archive against its published SHA-256 checksum before execution.
+- On pull requests, scan every commit introduced by the exact base-to-head range so unrelated remote branches cannot contaminate the result. Keep `workflow_dispatch` as an explicit full-history audit.
 - Pin Python packages to exact versions, GitHub Actions to immutable commit SHAs, and downloaded CI tools by version and checksum.
 
 ## Consequences

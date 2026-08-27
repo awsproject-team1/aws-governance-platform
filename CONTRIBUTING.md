@@ -157,10 +157,19 @@ Path Filter로 실행되지 않을 수 있는 Workflow를 그대로 Required Che
 
 ### `validate-pr-source` Required Check
 
-문서 규칙만으로는 GitHub UI/API의 Merge를 차단할 수 없습니다. `main` 대상 PR의 source 제한은 `.github/workflows/validate-pr-source.yml`이 만드는 `validate-pr-source` check로 강제합니다.
+문서 규칙만으로는 GitHub UI/API의 Merge를 차단할 수 없습니다. 위 표의 허용 경로는 `.github/workflows/validate-pr-source.yml`이 만드는 `validate-pr-source` check로 강제합니다.
 
-- 판정: `base=main`인 PR의 head repository가 이 Repository가 아니거나 head branch가 `dev`가 아니면 실패합니다.
-- `base`가 `main`이 아니면 검사 대상이 아니므로 성공으로 종료합니다.
+판정 기준은 다음과 같습니다.
+
+| base | 통과 조건 | 실패 예 |
+| --- | --- | --- |
+| `main` | head repository가 이 Repository이고 head branch가 `dev` | 작업 branch → `main`, Fork의 `dev` → `main` |
+| `dev` | head branch가 `main`/`dev`가 아니고 `feature/`, `fix/`, `docs/`, `refactor/`, `test/`, `chore/` 중 하나로 시작 | `main` → `dev`, prefix 없는 branch → `dev` |
+| 그 외 | 보호 대상이 아니므로 검사하지 않고 성공 | — |
+
+- Trigger는 `pull_request`가 아니라 `pull_request_target`입니다. `pull_request`는 PR merge commit의 workflow 정의를 실행하므로, 금지된 branch가 같은 job 이름을 유지한 채 이 파일을 항상 성공하도록 고쳐 Required Check를 통과할 수 있습니다. `pull_request_target`은 base branch의 신뢰된 정의를 실행합니다.
+- `pull_request_target`의 일반적인 위험은 PR 코드를 checkout해 실행하는 것입니다. 이 job은 checkout 없이 Event Metadata만 읽고 `contents: read` 권한만 가지므로 그 위험에 해당하지 않습니다.
+- `pull_request_target`은 **base branch에 workflow 파일이 있을 때만** 실행됩니다. 따라서 이 파일이 `dev`에 Merge되기 전의 PR에는 check가 나타나지 않습니다.
 - Path Filter와 branch filter를 두지 않아 **모든 PR에서 항상 완료 상태를 보고**합니다. 따라서 위 "Path Filter로 실행되지 않을 수 있는 Workflow를 Required Check로 등록하지 않는다"는 조건을 충족하며, Required Check로 등록해도 Merge가 대기 상태로 막히지 않습니다.
 
 Required Check는 PR 템플릿의 체크박스가 아니라 GitHub가 기록하는 status check입니다. Workflow가 check를 생성하고 Ruleset이 그 check를 필수로 지정해야 실패·대기 상태의 Merge가 차단됩니다. GitHub는 허용되지 않은 PR의 **생성 자체**를 기본 Ruleset만으로 차단하지 않으므로, 생성 금지는 협업 규칙으로 지키고 Merge는 이 check로 자동 차단합니다.
@@ -176,7 +185,7 @@ Ruleset 등록 전까지 이 check는 실패해도 Merge를 막지 못합니다.
 
 GitHub Actions는 Path Filter로 변경 영역에 필요한 검사를 자동 선택하는 것을 원칙으로 합니다. 현재 실행 가능한 Workflow는 모든 PR의 Secret Scan과 Python 변경 경로의 Python Checks입니다.
 
-- 모든 `main` 대상 PR: `validate-pr-source`
+- 모든 PR: `validate-pr-source` (`main`/`dev` 대상 PR의 head/base 조합 검증)
 - 모든 PR: Secret Scan
 - Python 변경: Unit Test, Contract Test, Ruff Lint/Format
 - Terraform 변경(목표, 아직 Workflow 미구현): `terraform fmt -check`, `terraform validate`, TFLint, Checkov
