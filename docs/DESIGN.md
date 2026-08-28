@@ -52,7 +52,7 @@ Backend는 정책 의미, Resource × Rule 판정, Terraform 수정·배포 로�
 
 ### Backend Python Package와 Lambda 경계
 
-초기 Backend는 Python 3.14의 Framework-free 경계를 사용한다. `apps.backend`가 Backend package이고 제품 Lambda Handler는 `apps.backend.handlers` 아래에 위치한다. 실제 Handler는 해당 API의 event/response/error/auth Contract가 승인된 뒤 추가하며, Bootstrap 단계에서는 API Gateway payload, HTTP response 또는 Endpoint를 만들지 않는다.
+초기 Backend는 Python 3.14의 Framework-free 경계를 사용한다. `apps.backend`가 Backend package이고 제품 Lambda Handler는 `apps.backend.handlers` 아래에 위치한다. #49는 `apps.backend.handlers.http_transport`에 API Gateway HTTP API v2 event extraction과 JSON proxy response의 순수 helper만 둔다. 실제 Lambda entry point, route binding, Repository/use-case composition은 후속 Handler Sub-issue에서 추가한다.
 
 `apps.backend.handlers._bootstrap_probe`는 package staging과 호출 가능성만 확인하는 private non-deployable probe다. Infrastructure의 Lambda Handler로 연결하지 않으며 event/context 내용을 읽거나 기록하지 않는다.
 
@@ -72,7 +72,7 @@ Admin과 User는 동일 Cognito User Pool과 로그인 화면을 사용한다. A
 
 Backend는 Authorizer가 검증한 claim에서 `token_use == "access"`, 비어 있지 않은 `sub`와 `client_id`, `cognito:groups`를 다시 확인한다. Group 이름은 정확히 `Admin`과 `User`만 Product Role로 해석하고, Request Body나 임의 Custom Claim의 Role은 사용하지 않는다. `Admin`은 User 기능을 포함한다. 현재 Action 정본은 `START_ASSESSMENT`와 `READ_JOB`이며 두 Role 모두 허용한다. 등록되지 않은 Action, 잘못된 Token 용도, 유효한 Product Role이 없는 Principal은 거부한다.
 
-Auth 모듈은 API Gateway event shape와 분리하고 cryptographic JWT 검증이나 JWKS 조회를 반복하지 않는다. 실제 event claim 추출과 HTTP 오류 변환은 Product Handler Contract에서 Fixture로 확정한다. 상세 결정은 [ADR 0004](decisions/0004-cognito-jwt-rbac-boundary.md)를 따른다. 사용자 초대, MFA, Token revocation, Scope와 나머지 Endpoint Role Matrix는 Open Decision이다.
+Auth 모듈은 API Gateway event shape와 분리하고 cryptographic JWT 검증이나 JWKS 조회를 반복하지 않는다. #49는 `requestContext.authorizer.jwt.claims`를 유일한 claim 입력 경로로 고정하고, `cognito:groups`가 JSON array로 보존되지 않으면 fail-closed 한다. transport는 malformed verified-claim event를 `401 UNAUTHORIZED`로 변환하며 Request Body나 임의 custom claim의 Role을 사용하지 않는다. 상세 결정은 [ADR 0004](decisions/0004-cognito-jwt-rbac-boundary.md)를 따른다. 사용자 초대, MFA, Token revocation, Scope와 나머지 Endpoint Role Matrix는 Open Decision이다.
 
 ## LangGraph와 Agent Runtime
 

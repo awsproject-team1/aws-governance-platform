@@ -11,7 +11,41 @@
 - 장시간 Workflow는 `202 Accepted + job_id`를 반환하고 `GET /jobs/{job_id}` Polling으로 추적한다.
 - Job API는 진행 상태와 연결 ID만 반환한다. 실제 결과는 Domain API로 조회한다.
 - API Callback/SSE/WebSocket은 MVP에 포함하지 않는다.
-- 정확한 Content-Type, Pagination, Idempotency Key, API version prefix와 Role별 Endpoint Matrix는 Open Decision이다.
+- `POST /assessments`와 `GET /jobs/{job_id}`는 API Gateway HTTP API Lambda integration payload `2.0`을 사용한다. 다른 Endpoint의 API version prefix, Pagination, Idempotency Key와 Role별 Matrix는 Open Decision이다.
+
+## HTTP API v2 Transport Contract
+
+#49는 이 문서의 두 A Endpoint에만 API Gateway HTTP API v2 transport를 고정한다. 실제 Lambda entry point, API Gateway deployment, JWT Authorizer 설정은 후속 구현 범위다. HTTP API Lambda integration의 payload version이 request event와 proxy response 해석을 함께 결정한다는 AWS 설명을 따른다. [AWS 공식 문서](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-lambda.html)
+
+- Event는 `version: "2.0"`, 정확한 `routeKey`, `requestContext.http.method`를 가져야 한다. `POST /assessments`와 `GET /jobs/{job_id}` 외 route/method를 이 transport helper가 추측하지 않는다.
+- 검증된 identity claim의 유일한 입력 경로는 `requestContext.authorizer.jwt.claims`다. `Principal.from_verified_claims`가 `token_use == "access"`, `sub`, `client_id`, 그리고 JSON array인 `cognito:groups`를 다시 검증한다. array가 보존되지 않거나 경로가 없으면 `401 UNAUTHORIZED`로 fail-closed 한다. Body, query, path, custom role field는 Principal을 만들거나 Role을 올릴 수 없다.
+- JSON response는 `statusCode`, `headers.content-type = "application/json; charset=utf-8"`, JSON string `body`, `isBase64Encoded: false`를 항상 포함한다.
+- POST body가 없거나 JSON이 아니거나 base64 encoding이면 `400 INVALID_REQUEST`다. JSON object이지만 `InitialAssessmentStartRequest` Schema에 맞지 않으면 `422 VALIDATION_ERROR`다.
+- GET Job은 존재하지 않는 ID와 읽기 권한이 없는 Job에 같은 `404 NOT_FOUND` envelope를 반환한다. 이 규칙은 Job 존재 여부와 소유자 정보를 노출하지 않는다.
+
+다음은 POST request event에서 이 Contract가 읽는 최소 field다. Fixture는 `fixtures/http/api-gateway-v2-contract.json`이 정본이다.
+
+```json
+{
+  "version": "2.0",
+  "routeKey": "POST /assessments",
+  "requestContext": {
+    "http": { "method": "POST" },
+    "authorizer": {
+      "jwt": {
+        "claims": {
+          "token_use": "access",
+          "sub": "subject-001",
+          "client_id": "client-001",
+          "cognito:groups": ["User"]
+        }
+      }
+    }
+  },
+  "body": "{...}",
+  "isBase64Encoded": false
+}
+```
 
 ## Endpoint 요약
 
@@ -348,7 +382,20 @@ Finding, Report, Patch, Plan 본문은 이 API가 반환하지 않는다.
 
 실행 가능한 응답 정본은 `packages.contracts.JobResponse`이며 상태와 단계는 각각 `JobStatus`, `JobCurrentStep`으로 제한한다. `job_type`과 연결 ID는 opaque non-empty string이고 연결 전 ID는 `null`이다. Job 내부 `error`는 공개 `ApiError` detail 또는 `null`이며 `ApiErrorResponse`의 최상위 envelope를 중첩하지 않는다. 닫힌 `job_type` 집합과 `QUEUED`의 기본 `current_step`은 Open Decision이다.
 
-내부 Job의 `requested_by`와 `revision`은 이 응답에 포함하지 않는다. Backend는 action-level `READ_JOB` 확인 뒤 User에게 `requested_by`가 자신의 Cognito subject와 같은 Job만 반환하고 Admin에게는 모든 Job 조회를 허용한다. 존재 여부와 소유권 거부를 HTTP에서 구분할지는 Handler Contract에서 확정한다.
+내부 Job의 `requested_by`와 `revision`은 이 응답에 포함하지 않는다. Backend는 action-level `READ_JOB` 확인 뒤 User에게 `requested_by`가 자신의 Cognito subject와 같은 Job만 반환하고 Admin에게는 모든 Job 조회를 허용한다. 존재하지 않는 Job과 소유권이 없는 Job은 모두 같은 `404 NOT_FOUND` response를 반환한다.
+
+```text
+404 Not Found
+```
+
+```json
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Job not found"
+  }
+}
+```
 
 ## Error
 
@@ -376,7 +423,20 @@ Backend API의 최소 오류 응답은 다음 형식이다.
 | `500` | `INTERNAL_ERROR` |
 | `502` | `EXTERNAL_SERVICE_ERROR` |
 
-Tool 내부 오류는 더 풍부한 `error_code`, `retryable`, `source`, `details`를 사용할 수 있지만 외부 API 최소 Contract와 혼합하지 않는다. AWS/GitHub/LLM 실패는 Governance `FAIL`이 아니라 Workflow 실행 오류다. Backend는 provider exception text를 응답에 복사하지 않고 lifecycle/CAS 충돌을 `INVALID_STATE`, repository provider 실패를 `EXTERNAL_SERVICE_ERROR`, 알 수 없는 예외를 `INTERNAL_ERROR`의 고정 message로 정제한다. 실제 Handler의 HTTP mapping과 endpoint별 닫힌 code 집합은 해당 Handler Contract에서 확정한다.
+Tool 내부 오류는 더 풍부한 `error_code`, `retryable`, `source`, `details`를 사용할 수 있지만 외부 API 최소 Contract와 혼합하지 않는다. AWS/GitHub/LLM 실패는 Governance `FAIL`이 아니라 Workflow 실행 오류다. Backend는 provider exception text를 응답에 복사하지 않고 lifecycle/CAS 충돌을 `INVALID_STATE`, repository provider 실패를 `EXTERNAL_SERVICE_ERROR`, 알 수 없는 예외를 `INTERNAL_ERROR`의 고정 message로 정제한다.
+
+#49가 확정한 endpoint mapping은 다음과 같다.
+
+| Endpoint | 상황 | HTTP / public error |
+| --- | --- | --- |
+| `POST /assessments` | body 없음, malformed JSON, unsupported event encoding | `400 INVALID_REQUEST` |
+| `POST /assessments` | JSON object지만 request Schema 위반 | `422 VALIDATION_ERROR` |
+| `POST /assessments` | 인증 claim 없음·형식 오류·지원 Role 없음 | `401 UNAUTHORIZED` |
+| `POST /assessments` | server-resolved Effective Rule Set이 비어 있음 | `400 EFFECTIVE_RULE_SET_EMPTY` |
+| `GET /jobs/{job_id}` | 인증 claim 없음·형식 오류·지원 Role 없음 | `401 UNAUTHORIZED` |
+| `GET /jobs/{job_id}` | Job 없음 또는 User가 소유하지 않음 | `404 NOT_FOUND` |
+
+POST start use case의 Governance/profile/state/dispatch 오류와 Handler route binding은 후속 A Sub-issue에서 이 표의 envelope를 사용해 확장한다.
 
 ## 외부 Interface
 

@@ -1,0 +1,123 @@
+{
+  "post_assessment_event": {
+    "version": "2.0",
+    "routeKey": "POST /assessments",
+    "rawPath": "/assessments",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "requestContext": {
+      "http": {
+        "method": "POST"
+      },
+      "authorizer": {
+        "jwt": {
+          "claims": {
+            "token_use": "access",
+            "sub": "subject-001",
+            "client_id": "client-001",
+            "cognito:groups": [
+              "User"
+            ]
+          }
+        }
+      }
+    },
+    "body": "{\"phase\":\"INITIAL\",\"repository_id\":\"repo-001\",\"policy_profile_id\":\"profile-001\",\"policy_profile_version\":1}",
+    "isBase64Encoded": false
+  },
+  "get_job_user_event": {
+    "version": "2.0",
+    "routeKey": "GET /jobs/{job_id}",
+    "rawPath": "/jobs/job-001",
+    "pathParameters": {
+      "job_id": "job-001"
+    },
+    "requestContext": {
+      "http": {
+        "method": "GET"
+      },
+      "authorizer": {
+        "jwt": {
+          "claims": {
+            "token_use": "access",
+            "sub": "subject-001",
+            "client_id": "client-001",
+            "cognito:groups": [
+              "User"
+            ]
+          }
+        }
+      }
+    },
+    "isBase64Encoded": false
+  },
+  "get_job_admin_event": {
+    "version": "2.0",
+    "routeKey": "GET /jobs/{job_id}",
+    "rawPath": "/jobs/job-001",
+    "pathParameters": {
+      "job_id": "job-001"
+    },
+    "requestContext": {
+      "http": {
+        "method": "GET"
+      },
+      "authorizer": {
+        "jwt": {
+          "claims": {
+            "token_use": "access",
+            "sub": "admin-001",
+            "client_id": "client-001",
+            "cognito:groups": [
+              "Admin"
+            ]
+          }
+        }
+      }
+    },
+    "isBase64Encoded": false
+  },
+  "expected_proxy_responses": {
+    "assessment_accepted": {
+      "statusCode": 202,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": "{\"job_id\":\"job-001\",\"status\":\"QUEUED\"}",
+      "isBase64Encoded": false
+    },
+    "job_not_found": {
+      "statusCode": 404,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Job not found\"}}",
+      "isBase64Encoded": false
+    },
+    "invalid_request": {
+      "statusCode": 400,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": "{\"error\":{\"code\":\"INVALID_REQUEST\",\"message\":\"Request does not match the HTTP API contract\"}}",
+      "isBase64Encoded": false
+    },
+    "validation_error": {
+      "statusCode": 422,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": "{\"error\":{\"code\":\"VALIDATION_ERROR\",\"message\":\"Request body does not match the required schema\"}}",
+      "isBase64Encoded": false
+    },
+    "unauthorized": {
+      "statusCode": 401,
+      "headers": {
+        "content-type": "application/json; charset=utf-8"
+      },
+      "body": "{\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Authentication credentials are invalid\"}}",
+      "isBase64Encoded": false
+    }
+  }
+}

@@ -13,6 +13,18 @@
 - 미확정 필드는 추측하지 않고 Open Decision으로 유지한다.
 - 실행 Contract의 `from_dict`는 모르는 필드를 **버리지 않고 거부한다**. 조용히 버리면 Consumer의 오타가 검증 오류가 아니라 잘못된 값이 된다. `sevirity`가 버려지면 `severity`는 payload가 우연히 담고 있던 값을 유지하는데, `severity`는 scoring 가중치이므로 결과는 아무 오류 없이 잘못된 준수 점수다.
 
+## HTTP Transport
+
+`POST /assessments`와 `GET /jobs/{job_id}`의 실행 가능한 HTTP API v2 transport 정본은 `apps.backend.handlers.http_transport`와 `fixtures/http/api-gateway-v2-contract.json`이다. 이 helper는 framework-free이며 Lambda entry point, API Gateway client, JWT cryptographic verification, Repository composition을 소유하지 않는다.
+
+- Producer: API Gateway HTTP API JWT Authorizer + Lambda integration
+- Consumer: A Backend Handler
+- Required event boundary: `version = "2.0"`, 정확한 `routeKey`, `requestContext.http.method`, 검증된 `requestContext.authorizer.jwt.claims`
+- Principal handoff: auth module은 event shape를 알지 않는다. transport가 claims mapping만 `Principal.from_verified_claims`에 전달하고, Principal은 access token·subject·client ID·지원 Cognito group을 fail-closed 검증한다.
+- Public response: `statusCode`, JSON `content-type`, JSON string `body`, `isBase64Encoded = false`를 갖는 proxy response다. 공개 오류 body는 `ApiErrorResponse` envelope만 사용한다.
+- Concealment: GET Job의 missing과 non-owned 상태는 동일 `404 NOT_FOUND` envelope로 직렬화한다.
+- Excluded: deployable Lambda Handler, route registration, API Gateway/Authorizer/IAM configuration, POST start use case와 downstream B/C/D adapter
+
 ## Job
 
 - Purpose: 사용자 요청 하나의 상위 Workflow 실행 추적
