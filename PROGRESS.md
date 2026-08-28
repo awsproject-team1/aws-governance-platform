@@ -6,6 +6,17 @@
 - 기능 완료 시 담당자가 `dev` Merge 후 이 파일의 Completed에 핵심 결정·결과를 한 줄로 올린다.
 - 서술은 한국어로 작성하고 식별자·경로·기술 용어·`Status`·URL은 원문을 유지한다.
 
+## 최초 1회 초기화 (V3 도입 backfill — 완료 후 이 절 삭제)
+
+> 이것은 앞으로 매번 지키는 규칙이 아니라 **V3 전환 시 딱 한 번만** 하는 작업이다. GitHub Issue/Project를 쓰던 시절에 이미 진행·완료한 작업이 이 파일에 없으므로, 각 Owner가 자기 기존 작업을 아래에 한 번 채워 넣는다. 모두 채우면 이 절을 지운다.
+
+- [ ] A (Platform/API/Auth/Data): 기존 완료·진행 작업을 아래 Completed/Current에 요약 기록
+- [ ] B (Governance/Policy/Knowledge): 동일
+- [ ] C (Agent Platform/Assessment): 동일
+- [ ] D (Remediation/IaC/GitHub/Deployment): 동일
+
+기록 방법: 완료분은 `Completed`에 한 줄씩(날짜·영역·완료 항목·핵심 결정), 진행 중이면 `Current`에, 막힌 것은 `Blocked`에 넣는다. 세부는 개인 `.ai/task/`에 두고 여기에는 팀이 알아야 할 요약만 남긴다. 과거 GitHub Issue 번호는 이력 참고로만 적고 새 작업 관리에는 쓰지 않는다.
+
 ## Current
 
 | 영역 | 기능 | Owner | Branch / PR | 상태 |
