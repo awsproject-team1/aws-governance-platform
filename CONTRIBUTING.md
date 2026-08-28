@@ -37,6 +37,7 @@ dev → Pull Request → Required CI / Review → Merge Commit → main
 - 다른 Owner 영역이나 공통 Contract에 영향을 주면 구현 전에 관련 Owner와 합의하고 `PROGRESS.md`에 의존성을 명시합니다.
 - 구현과 로컬 검증을 마친 뒤 Platform Repository PR을 `dev` 대상으로 생성합니다. Required CI는 PR 이후 Gate로 수행합니다.
 - Review와 Merge는 사람이 수행합니다. `dev` Merge 후 담당자가 `PROGRESS.md`의 Completed를 갱신하고 다음 기능을 새 Session에서 시작합니다.
+- **새 Session 전환과 Merge 후 갱신은 자동이 아니라 사람이 트리거합니다.** Coding Agent는 스스로 새 Session을 열거나 기능 완료를 감지해 다음 작업으로 넘어가지 않습니다. 담당자가 (1) Merge를 수행하고 (2) `PROGRESS.md`의 Completed를 갱신하며 (3) 다음 기능의 `.ai/task/taskN.md`를 정의한 새 Session을 엽니다. Agent는 열린 Session 안에서 해당 `taskN.md` 범위의 정의·구현·검증을 자율적으로 수행합니다(무엇을 할지는 사람, 어떻게 할지는 Agent).
 
 ### 역할과 작업 조정
 
