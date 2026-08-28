@@ -7,6 +7,10 @@
 ```text
 Customer User / Admin
   → React Web Application
+      ├─ App Shell (Auth Guard, 공통 Layout, Route Outlet, 전역 오류)
+      ├─ Route / Page
+      ├─ Domain Feature Module (policy / assessment / remediation)
+      └─ API Client (Access Token 첨부, Error Envelope 정규화, Job Polling)
   → API Gateway + Lambda Backend
   → LangGraph Parent Graph
       ├─ Policy Subgraph
@@ -15,6 +19,8 @@ Customer User / Admin
   → Agent / deterministic Code Node / Tool
   → Customer Policy, Customer GitHub IaC, AWS Control Plane
 ```
+
+React Web Application의 내부 모듈 경계와 Owner는 "Web Application" 절, 하나의 요청이 언제 즉시 응답되고 언제 Job Polling으로 넘어가는지는 "Job 실행 모드와 sync/async 전환" 절을 정본으로 사용한다.
 
 플랫폼은 고객 AWS Account 내부에 회사 단위로 배포된다. 고객 정책, IaC Snapshot, 평가 결과, Audit 데이터는 고객 환경에 보존한다. 고객 Workload Terraform은 별도 고객 Repository의 정본이며 이 Monorepo에는 포함하지 않는다.
 
@@ -30,11 +36,153 @@ Customer User / Admin
 
 MVP의 Backend Lambda와 Agent Runtime은 고객 기존 VPC/Subnet에 연결하지 않는다. AWS Resource 평가는 Read-Only IAM Role로 AWS Control Plane API를 호출한다. Existing VPC Integration, NAT/VPC Endpoint, Route/DNS, Private API/DB/On-Prem 접근은 확장 범위이며 필요 조건을 확인한 뒤 별도 결정한다.
 
-## Frontend
+## Web Application
 
-하나의 React Application이 Admin/User 화면을 Role에 따라 노출한다. Login, 공통 Layout/Router, API Client, Job 상태 표시와 Policy, Assessment, Finding/Report, Remediation/Deployment, GitHub, User/Role, Audit 화면을 제공한다.
+### Current State
 
-Frontend의 역할은 사용자 입력, 명시적 기능 선택, Job Polling, 결과 표시다. 권한 판단의 정본이 아니며 Backend가 JWT/RBAC를 재검증한다. Streaming은 MVP 범위가 아니므로 장시간 작업은 Polling한다.
+`apps/frontend/src/policy/PolicyGovernancePanel.jsx`와 `model.mjs`만 구현되어 있다. Policy Source, Global Source 적용 범위, Rule Candidate, Rule Registry/Approval, Policy Profile, Effective Rule Set, Source별 Score/Coverage, Compliance Mapping/Evidence Readiness를 props/callback으로 받아 표시하는 순수 View Component이며 공통 App Shell, Router, 인증, API Client는 아직 없다. `apps/frontend/src/{api,assessment,auth,common,remediation,routes}`는 `.gitkeep`만 있는 빈 디렉터리다. 아래 Target Architecture는 이 현재 상태를 확장하는 목표이며 기존 Component의 Props Contract를 임의로 축소하지 않는다.
+
+### Target Architecture
+
+하나의 React Application이 Admin/User 화면을 Role에 따라 노출한다(Approved Product Decision, [PRD.md](PRD.md) 사용자와 Role). Router, 상태관리 라이브러리, 빌드 도구, 정적 호스팅 서비스는 아직 결정하지 않았으며 임의로 선택하지 않는다(Open Decision). 이 절은 그 선택과 무관하게 유지되어야 하는 책임 경계를 정의한다.
+
+#### 책임과 금지 경계
+
+- Web Application은 사용자 입력 수집, 명시적 기능 선택, Job 생성 요청, Job Polling, Domain Result 조회·표시를 담당한다.
+- 권한 판단의 정본이 아니다. 메뉴/버튼을 숨기는 것은 UX 편의이며 Backend가 모든 action의 JWT/RBAC를 다시 검증한다는 전제를 바꾸지 않는다.
+- Resource × Rule 판정, Scoring, Terraform Patch 생성, Apply 여부 결정 로직을 Client에 두지 않는다. 이 로직의 결과만 표시한다.
+- Cognito 자격증명 교환과 Access Token 보관 외의 별도 Credential(AWS Key, GitHub Token 등)을 저장하지 않는다.
+- Streaming은 MVP 범위가 아니므로 장시간 작업은 Polling으로 처리한다([PRD.md](PRD.md) MVP Scope).
+
+#### 모듈 구조와 Owner 경계
+
+디렉터리 구조는 이미 Repository에 존재하는 `apps/frontend/src/`를 정본으로 사용한다. 아래 표는 그 디렉터리와 [AGENTS.md](../AGENTS.md) Owner 경계를 연결한 것이며, 새 디렉터리를 임의로 만들지 않는다.
+
+| 디렉터리 | 계층 | 책임 | Owner |
+| --- | --- | --- | --- |
+| `src/common/` | App Shell | 공통 Layout, Navigation, 현재 Role 표시, 전역 오류/알림, 공용 표시 Component | A |
+| `src/auth/` | App Shell | Cognito 로그인 흐름, 인증 세션과 Access Token 보관, Auth Guard | A |
+| `src/api/` | API Client | Access Token 첨부, 공통 timeout, Error Envelope 파싱·정규화, Job Polling helper | A |
+| `src/routes/` | Route | Route 정의, Route Guard, 화면 조합 | A |
+| `src/policy/` | Domain Feature | Policy Source/Rule Candidate/Rule Registry/Policy Profile 화면(`PolicyGovernancePanel`) | B |
+| `src/assessment/` | Domain Feature | Assessment 실행·진행상태·결과 화면 | C |
+| `src/remediation/` | Domain Feature | Remediation/Deployment/Approval 화면 | D |
+
+계층 의존 방향은 `routes → domain feature → api`이고 `common`/`auth`는 모든 계층이 사용한다. Domain Feature Module은 서로를 직접 import하지 않는다. 다른 Domain의 데이터가 필요하면 Backend API 또는 `common`의 공유 표시 Component를 거친다. Owner가 다른 디렉터리를 직접 수정하지 않는다.
+
+Backend가 소유한 판정 결과(Resource × Rule, Score, Patch, Plan)를 Domain Feature Module 안에서 재계산하지 않는다. 이 규칙은 Router/상태관리 선택과 무관하게 유지한다.
+
+아래 Route 목록 중 `/chat`, `/findings`, `/isms-p`, `/repositories`, `/users`, `/audit` 화면은 현재 대응하는 모듈 디렉터리도 [AGENTS.md](../AGENTS.md) Owner도 없다. 이 화면들을 기존 디렉터리 중 어디에 두거나 새 디렉터리를 만들지, 그리고 누가 소유할지는 Open Decision이며 구현자가 임의로 배치하지 않는다.
+
+#### App Shell과 Route 구조
+
+App Shell은 Login/Auth Guard, 공통 Layout(Navigation, 현재 Role 표시), Route Outlet, 전역 오류/알림 표시를 소유한다. Route는 최소한 다음 화면 그룹을 갖는다.
+
+```text
+/login
+/chat                          (Policy Q&A / Routing)
+/policy                        (Policy Source, Rule, Profile 관리 — Admin 중심)
+/assessments, /assessments/:id (Assessment 실행/진행상태/결과)
+/findings, /findings/:id       (Finding/Report)
+/isms-p                        (ISMS-P Readiness Dashboard)
+/remediations/:id              (Remediation)
+/deployments/:id               (Deployment/Approval)
+/repositories                  (GitHub Repository 연결 — Admin)
+/users                         (사용자/Role 관리 — Admin)
+/audit                         (Audit)
+```
+
+정확한 URL 구조, 중첩 Route, lazy loading 전략은 Router 선택 이후 확정하는 Open Decision이다.
+
+#### 인증 세션과 Access Token 처리 경계
+
+- App Shell은 Cognito 로그인 결과에서 Access Token만 보관하고, 모든 API 요청의 `Authorization` header에 사용한다. Token 자체의 Role 판단(Client-side JWT decode 기반 화면 분기)은 신뢰 경계로 사용하지 않으며, 화면 노출 최적화 용도로만 참고한다.
+- Token 만료·갱신 실패는 인증 세션 무효로 취급해 재로그인 화면으로 이동시키고, 진행 중이던 미저장 Client 입력은 폐기 전 사용자에게 알린다.
+- Token, refresh token, 원문 Cognito claim을 브라우저 저장소나 URL Query String에 평문으로 노출하지 않는다. 정확한 저장 위치(memory-only, secure storage 등)는 Open Decision이지만 로그·Error Report·URL에는 어떤 경우에도 포함하지 않는다.
+
+#### API Client와 오류 정규화
+
+- 모든 Backend 호출은 공통 API Client를 통과한다. Client는 Access Token 첨부, 공통 timeout, [API.md](API.md)의 최상위 Error Envelope(`{"error": {"code", "message"}}`) 파싱을 담당한다.
+- `code`별로 사용자 메시지를 정규화하되, Backend가 정제하지 않은 원문 예외·Provider 응답을 그대로 표시하지 않는다.
+- 인증 실패(`401`/`403`), 존재하지 않음(`404`), 상태 충돌(`409`), 검증 실패(`422`), 내부/외부 오류(`500`/`502`)를 화면별로 구분해 표시한다. 정확한 code 집합은 [API.md](API.md)를 따른다.
+
+#### Server State와 Local UI State 구분
+
+- Server State(Assessment, Finding, Job, Readiness 등 Backend가 소유한 데이터)는 캐시하더라도 Backend 응답을 진실로 취급하며 낙관적 갱신 후 반드시 재조회로 확정한다.
+- Local UI State(입력 폼 값, 펼침/접힘, 선택된 탭 등)는 Server State와 분리해 관리하고 Job 재개/새로고침 시 별도로 초기화될 수 있음을 전제한다.
+- 두 상태를 구분하는 구체 라이브러리/패턴은 상태관리 라이브러리 선택과 함께 확정하는 Open Decision이다.
+
+#### Job 생성 → Polling → Domain Result 조회 (Client 관점)
+
+응답 모드와 Job 규칙 자체의 정본은 "Job 실행 모드와 sync/async 전환" 절이다. 이 절은 그 규칙을 화면이 어떻게 다루는지만 정의한다.
+
+```text
+Browser → Auth Session → Router/Page → API Client → API Gateway → Backend
+                                          ↓ 202 + job_id
+                                     Job Polling (GET /jobs/{job_id})
+                                          ↓ COMPLETED
+                                     Domain API 조회 → 화면 표시
+```
+
+1. 사용자가 기능(Assessment 시작, Remediation 요청 등)을 실행하면 API Client가 해당 Domain API를 호출한다.
+2. Workflow Endpoint는 `202 Accepted + job_id`를 반환한다. `POST /chat`만 예외적으로 Backend sync wait 안에 끝나면 `200 OK`로 답변을 바로 반환하고, 초과하면 같은 Job의 `job_id`를 담아 `202`로 넘어간다. 화면은 이 두 응답 모양을 모두 처리할 수 있어야 하며, API Client의 timeout은 Backend sync wait보다 커야 한다.
+3. `job_id`를 받으면 화면은 `GET /jobs/{job_id}`를 Polling하며 `status`/`current_step`을 표시한다. Polling 주기, 최대 Polling 시간, backoff는 Open Decision이므로 임의의 값을 코드에 고정하지 않는다.
+4. Job이 `COMPLETED`가 되면 Job 응답이 아니라 연결된 Domain API(`GET /assessments/{id}`, `/findings`, `/results` 등)를 조회해 실제 결과를 가져온다. Job API는 진행 상태와 연결 ID만 반환하고 Finding/Report/Patch/Plan 본문을 반환하지 않는다([CONTRACTS.md](CONTRACTS.md) Job).
+5. `WAITING_REVIEW`/`WAITING_APPROVAL`이면 Polling을 멈추지 않은 채 사람의 입력(Policy Review 제출, Deployment Approval) 화면을 띄우고, 제출 후 같은 Job의 Polling을 이어간다. 재개는 새 Job을 만들지 않는다.
+6. `FAILED`/`CANCELLED`면 `error`를 정규화해 표시하고 Governance `FAIL`과 실행 오류를 구분해 보여준다. 이 세 상태는 terminal이므로 Polling을 종료한다.
+7. 화면 이탈·새로고침 뒤에도 `job_id`로 Polling을 다시 시작할 수 있어야 한다. `job_id`를 어디에 보존할지는 Route 구조 확정과 함께 정하는 Open Decision이다.
+
+#### Admin/User 권한별 화면과 Route
+
+- `Admin`: Policy Source/Rule/Policy Profile 관리, GitHub Repository 연결, 사용자·Role 관리, Rule Candidate 승인, Assessment/Deployment/Audit 관리 화면 전체에 접근한다.
+- `User`: Policy Q&A, Assessment 요청, Finding/Report 확인, Remediation 요청, 평가 이력 조회 화면에 접근한다.
+- `Admin`은 `User` 화면을 포함해 접근할 수 있다([PRD.md](PRD.md) 사용자와 Role). 화면 단위 Route Guard는 UX 편의이며 실제 authorization은 Backend RBAC가 최종 결정한다.
+
+#### 화면별 책임
+
+- **Policy 관리**: Policy Source 등록/상태, Global Source 적용 범위, Rule Candidate 검토, Rule Registry/Approval, Policy Profile/Effective Rule Set 조회. 현재 `PolicyGovernancePanel`의 Props Contract를 확장 기준으로 유지한다.
+- **Assessment 실행과 진행상태**: Repository/Policy Profile 선택, Assessment 시작, Job Polling 기반 진행 표시.
+- **Finding/Report**: Resource × Rule 결과, FAIL Finding 목록, Review/Final Report 조회.
+- **ISMS-P Readiness Dashboard**: Mapping Coverage, Evidence Readiness, ISMS-P Readiness Score(정의됐다면)를 항목별로 표시한다. 점수 표시 규칙은 아래 "점수 표시 규칙"을 따른다.
+- **항목별 Evidence와 Manual Review**: 자동 Evidence, 누락 Evidence, Manual Review 대상과 사유를 항목 단위로 보여주고 자동 PASS로 대체 표시하지 않는다.
+- **Remediation/Deployment/Approval**: Finding 선택, Patch/Diff 요약, PR/CI/Plan 상태, Human Approval(승인/거절) 화면. Approval 화면은 승인 대상 `commit_sha`/`plan_hash`를 표시하고 값이 바뀌면 재승인이 필요함을 알린다.
+- **Audit 화면**: Rule 승인, Profile/Settings 변경, Assessment, Review, Remediation 선택, PR, Approval/Reject, Apply, Post-Deploy 결과를 시간순으로 조회한다(Admin 중심).
+
+#### 화면 상태 처리
+
+모든 데이터 조회 화면은 최소한 다음 상태를 구분해 표시한다.
+
+- Loading(최초 로딩), Empty(결과 0건), Partial(일부 데이터만 수신 또는 일부 항목 오류), Stale(재조회 필요/오래된 캐시), Forbidden(403), Validation Error(422, 필드별 메시지), Workflow Error(Job `FAILED`, Governance `FAIL`이 아닌 실행 오류)
+
+Governance `FAIL`(정상 판정)과 Workflow/Execution Error는 항상 시각적으로 구분한다([CONTRACTS.md](CONTRACTS.md) AssessmentResult).
+
+Stale 판정에 쓸 서버측 기준은 아직 없다. `JobResponse`에 timestamp field가 없으므로 Client가 자체 측정한 마지막 성공 조회 시각 외에 근거로 삼을 값이 없고, Job timestamp 포함 여부는 Open Decision이다.
+
+#### 점수 표시 규칙
+
+Source별 Score/Coverage, ISMS-P Readiness Score를 표시하는 모든 화면은 기준 문서/Profile 버전, 적용범위, Coverage, 수동검토 수, disclaimer(공식 인증·합격 예측이 아님)를 점수와 함께 표시한다. 점수만 단독으로 노출하지 않는다([NAMING.md](NAMING.md), [CONTRACTS.md](CONTRACTS.md) Scoring과 Coverage Contract).
+
+#### 민감정보 노출 금지
+
+Access Token, Cognito claim 원문, AWS/GitHub Credential, Secret, Backend가 정제하지 않은 원문 예외 메시지를 로그, 화면, 클라이언트 오류 보고에 노출하지 않는다. 브라우저 콘솔에 인증 관련 값을 출력하지 않는다.
+
+#### 접근성 요구
+
+키보드만으로 모든 주요 흐름(로그인, Assessment 시작, Approval)을 완료할 수 있어야 하고, 폼 필드는 label과 연결하며, 상태 변화(Job 진행, 오류)는 스크린 리더가 인지할 수 있는 방식으로 알려야 한다. 구체 WCAG 준수 레벨과 자동 검증 도구는 Open Decision이다.
+
+#### 테스트 경계
+
+- Component Test: 개별 화면/Component를 Props/State 기준으로 검증한다(`PolicyGovernancePanel`처럼 순수 함수적 View는 Node 기반 Model Test로 검증, [README.md](../README.md) Frontend Model Test 참고).
+- State Test: Server/Local State 분리 로직과 Polling 상태 전이를 검증한다.
+- API Contract Test: API Client가 [API.md](API.md)/`packages/contracts/`와 호환되는지 검증한다.
+- Integration Test: 화면 간 이동과 Job Polling → Domain Result 조회 흐름을 검증한다.
+- E2E Test: 실제 Backend(또는 Contract-호환 Mock)를 사용해 로그인부터 승인까지의 핵심 경로를 검증한다.
+
+Router, 상태관리, E2E 도구 선택에 따른 구체 실행 명령은 해당 도구 확정 시 [README.md](../README.md)와 `CONTRIBUTING.md`에 추가한다.
+
+#### Build와 Deployment 경계
+
+Web Application은 고객 AWS Account에 함께 배포되는 Customer-Deployed 구성요소다([PRD.md](PRD.md) Deployment Model). Build Artifact는 Platform CloudFormation 배포 절차의 일부로 고객 Account 내부에 호스팅되며, Backend와 마찬가지로 고객 기존 VPC에 대한 Private Integration을 전제하지 않는다. 정적 호스팅 서비스, CDN, 빌드 파이프라인의 구체 선택은 Open Decision이다.
 
 ## API Gateway와 Lambda Backend
 
@@ -49,6 +197,48 @@ API Gateway + Lambda 중심의 서버리스 Backend를 사용한다. Backend의 
 - Human Review와 Approval 요청 처리
 
 Backend는 정책 의미, Resource × Rule 판정, Terraform 수정·배포 로직을 소유하지 않는다. 자연어 의미 분류는 Parent Graph Router가 담당하며 명시적 기능 API는 Router를 생략한다.
+
+### Job 실행 모드와 sync/async 전환
+
+이 Repository의 문서는 "전환"이라는 말을 두 가지 서로 다른 뜻으로 사용해 왔다. 아래에서 둘을 분리하며, "sync→async 전환"은 항상 (1)만 가리킨다.
+
+1. **응답 모드 전환(sync → async)**: 하나의 HTTP 요청에 대해 Backend가 결과 본문을 바로 돌려줄지(`200`), Job ID만 돌려주고 이후를 Polling에 맡길지(`202`)를 고르는 것. Client가 보는 흐름이 달라진다.
+2. **Runtime 전환**: 장시간 Workflow의 실행 주체를 Lambda 밖의 실행 환경으로 옮기는 것. Open Decision이며 (1)과 독립이다. Runtime을 어디서 실행하든 Client가 보는 응답 모드는 바뀌지 않는다.
+
+#### 결정된 규칙
+
+- 하나의 사용자 요청은 하나의 Job으로 추적한다. sync로 시작해 async로 넘어가도 **새 Job을 만들지 않고 처음 생성한 Job ID를 유지한다**([CONTRACTS.md](CONTRACTS.md) Job).
+- 조건부 sync는 현재 `POST /chat`에만 적용된다. 다른 Workflow Endpoint는 짧게 끝나더라도 `202`를 반환하며 결과를 본문에 싣지 않는다.
+- sync wait는 Backend 내부 대기이고 초기 검토값은 10초다([API.md](API.md) `POST /chat`). Web Application의 공통 HTTP timeout은 이 값보다 커야 하며, 그렇지 않으면 sync 응답을 받을 수 있는 요청을 Client가 먼저 끊는다.
+- `202`를 받은 Client는 `GET /jobs/{job_id}`만 Polling한다. Job API는 `status`, `current_step`, 연결 Domain ID, sanitized `error`만 반환하고 Finding/Report/Patch/Plan 본문을 반환하지 않는다.
+- `COMPLETED` 이후 실제 결과는 Job 응답에 연결된 Domain API로 조회한다.
+- 사람 입력 대기(`WAITING_REVIEW`, `WAITING_APPROVAL`)는 Job의 종료가 아니다. 같은 Job이 재개되며 `RUNNING`으로 돌아간다.
+- 하나의 Job은 `assessment_id`, `remediation_id`, `deployment_id`를 함께 가질 수 있고 각 ID는 write-once다(`packages.contracts.JobResponse`). Remediation에서 시작한 Job은 Deployment 단계까지 같은 Job으로 이어진다.
+
+Endpoint별 현재 상태는 다음과 같다.
+
+| Endpoint | 응답 모드 | Job 생성/재사용 | 성공 응답 |
+| --- | --- | --- | --- |
+| `POST /chat` | 조건부 sync → async | 신규 | sync 완료 시 `200` + 답변 본문, 초과 시 `202` + 같은 `job_id` |
+| `POST /assessments` | 항상 async | 신규 | `202` + `job_id`, `QUEUED` |
+| `POST /assessments/{id}/policy-review` | 항상 async | 같은 Job 재개 | `202` + `job_id`, `RUNNING` |
+| `POST /remediations` | 항상 async | 신규 | `202` + `job_id`, `QUEUED` |
+| `POST /deployments/{id}/approval` | 같은 Job 재개 또는 종료 | 같은 Job 재사용 | 응답 Contract 미정의 |
+| `GET` 계열 | 항상 sync | 없음 | `200` |
+
+Job 생성 시점은 Endpoint마다 같지 않다. `POST /assessments`는 Effective Rule Set과 scoring version 검증을 통과한 뒤에만 Job을 만들고, 실행 가능한 Rule이 0건이면 Job과 Assessment를 만들지 않고 `400 EFFECTIVE_RULE_SET_EMPTY`로 거절한다([CONTRACTS.md](CONTRACTS.md) Assessment start). "요청 접수 즉시 Job 생성"은 검증을 통과한 요청에만 해당한다.
+
+#### 미결정 — 구현자가 임의로 채우지 않는다
+
+아래 항목은 현재 어떤 정본 문서에도 답이 없다. 구현 중 이 지점에 도달하면 값을 추측해 넣지 말고 Contract 합의를 먼저 진행한다.
+
+- `POST /chat`이 sync wait 안에 끝났을 때, 이미 생성된 Job을 어떤 상태로 마감하는지와 그 `job_id`를 `200` 응답에 포함하는지. 현재 `200` 응답 예시에는 `job_id`가 없어 Client가 그 Job을 조회할 경로가 없다.
+- `POST /chat`이 async로 넘어간 뒤 Policy Q&A 답변을 회수하는 Endpoint. `JobResponse`는 `assessment_id`, `remediation_id`, `deployment_id`만 연결하며 답변 본문 조회 API가 정의되어 있지 않다.
+- Policy Q&A/Routing 단계에 해당하는 `JobCurrentStep`. `packages.contracts.JobCurrentStep`은 닫힌 집합이고 `apps.backend.jobs.create_job`은 `initial_step`을 필수로 요구하는데, 현재 집합에 Chat 단계가 없다.
+- Endpoint별 `job_type` 값과 그 닫힌 집합.
+- `POST /deployments/{id}/approval`의 HTTP status code와 응답 body, 그리고 `REJECT`가 Job을 어떤 terminal 상태로 보내는지.
+- Polling 주기, 최대 Polling 시간, backoff, Job 자체의 최대 실행시간과 초과 시 상태.
+- Job 응답의 timestamp. 현재 `JobResponse`에는 시간 field가 없어 Client가 Stale 여부나 진행 정체를 판정할 수단이 없다.
 
 ### Backend Python Package와 Lambda 경계
 
@@ -86,7 +276,7 @@ Policy Q&A, 정책 원문 해석, Rule Candidate 생성 보조, Policy Evidence 
 
 ### Assessment Subgraph
 
-IaC Snapshot, Policy Profile, Effective Rule Set, Evidence, 필요 시 AWS Actual State를 조합해 Structured AssessmentResult를 생성한다. deterministic Code Node가 Phase/Scope/Rule 후보와 평가 가능 여부를 먼저 확정한다.
+IaC Snapshot, Policy Profile, Effective Rule Set, Evidence, 필요 시 AWS Actual State를 조합해 Structured AssessmentResult를 생성한다. deterministic Code Node가 Phase/Scope/Rule 후보와 평가 가능 여부를 먼저 확정하고, Resource × Rule의 의미 판정 자체는 "LLM Scoring Harness" 절의 공통 구조를 따른다.
 
 ### Remediation Subgraph
 
@@ -133,7 +323,7 @@ GitHub App Installation Token으로 고객이 승인한 Repository만 접근한�
 
 ### 내부 Code Node
 
-Terraform Parser, Schema Validation, Rule Filtering, Effective Rule Set 구성, Job 상태 전이, Data Access, Score 계산은 결정론적 Code로 구현한다. Parser는 구조적 사실만 추출하며 정책 의미 판정은 Assessment Agent가 담당한다.
+Terraform Parser, Schema Validation, Rule Filtering, Effective Rule Set 구성, Job 상태 전이, Data Access는 결정론적 Code로 구현한다. Score 계산은 LLM Scoring Harness가 판정한 항목별 결과의 기계적 집계(Weight 합산, 반올림)만 의미하며, 항목의 적합 여부와 의미 기반 점수는 Code에 하드코딩하지 않는다. Parser는 구조적 사실만 추출하며 정책 의미 판정은 LLM Scoring Harness(Assessment Agent)가 담당한다.
 
 ## Governance Domain
 
@@ -166,7 +356,48 @@ Reference만 확인된 Source를 scored/evaluable로 승격하지 않는다. Sna
 
 FSBP S3는 `sources/official_snapshot.py`에서 공식 문서 전문이 아닌 검토 가능한 metadata projection으로 동결한다. 관찰한 S3 Control Set 전체를 선택/제외로 분할하고 선택 Control evidence hash를 다시 계산한다. 기존 승인 Rule의 의미가 같더라도 Source Reference가 새 snapshot과 다르면 Rule을 변형하거나 자동 승인하지 않고 새 version과 Human Approval을 요구한다. SG/VPC는 `fixtures/rules/fsbp-sg-vpc-source-inventory.json`에 공식 Control inventory만 기록하며 B→C evaluator/fact 계약이 공동 승인되기 전에는 Rule Candidate로 승격하지 않는다.
 
-`packages/governance/compliance/readiness.py`는 ISMS-P 항목에서 Project Control → Rule pin → Evidence/Finding/Remediation 추적과 Mapping Coverage/Evidence 상태 분포를 만든다. Assessment PASS/FAIL과 Compliance Score는 만들지 않는다.
+`packages/governance/compliance/readiness.py`는 ISMS-P 항목에서 Project Control → Rule pin → Evidence/Finding/Remediation 추적과 Mapping Coverage/Evidence 상태 분포를 만든다(Current Implementation). Assessment PASS/FAIL과 Compliance Score는 만들지 않는다.
+
+## LLM Scoring Harness (Target)
+
+Global Policy, Customer Policy, AWS Governance/Security Source, ISMS-P를 포함한 **모든 등록 Source**의 개별 Rule Evaluation과 의미 기반 Scoring은 하나의 공통 LLM Scoring Harness가 담당한다. ISMS-P 전용 별도 scoring 엔진을 두지 않는다. 제품 방향은 [PRD.md](PRD.md) Problem Statement, 입력/출력 계약은 [CONTRACTS.md](CONTRACTS.md) AssessmentResult/RuleEvaluation을 정본으로 따르며, 이 절은 처리 구조만 정의한다.
+
+```text
+Source / Rule / Evidence / Scope
+  → 결정론적 수집·정규화·Version Pinning        (Code)
+  → 공통 LLM Scoring Harness                     (LLM)
+      → 항목별 평가 상태
+      → 항목별 Score
+      → Evidence Citation
+      → Rationale
+      → Finding 또는 Manual Review
+  → Schema·완전성·허용 상태 검증                 (Code)
+  → 기계적 Source별 집계                         (Code)
+  → Report / Audit
+```
+
+- **Source Adapter 경계**: Source마다 다른 것은 입력 문서 형식, Evidence 종류, Prompt/Rubric, 결과 표현(예: ISMS-P의 Mapping Coverage/Readiness Score)뿐이다. Harness에 들어가기 전 수집·정규화·Version Pinning과 Harness를 나온 뒤 Schema 검증·집계는 모든 Source가 같은 구조를 공유한다.
+- **LLM이 담당**: Rule 요구사항과 Evidence의 의미 비교, 항목별 평가 상태·Score, 판단 근거, 미충족/부분충족 사유, Manual Review 필요 여부. 등록되지 않은 요구사항·Threshold·Evidence를 창작하지 않으며 서버가 보유한 Evidence Reference만 인용한다(Evidence Grounding).
+- **Code가 담당**: Source/Rule/Evidence/Scope 수집·정규화, ID/Version pinning, 적용 Rule Set·Prompt/Rubric 선택, 입출력 Schema·완전성·허용 상태 검증, 필수 Evidence/인용 존재 확인, Workflow/권한/승인/중복 방지/Audit, 그리고 LLM이 만든 항목별 확정 점수의 기계적 합산·반올림. 항목의 적합 여부와 의미 기반 점수를 Code에 하드코딩하지 않는다.
+- **Versioning**: Rule, Evidence, Scope, Prompt, Rubric, Model, Harness Version을 함께 고정·보존한다.
+- **불일치와 Manual Review**: 같은 입력을 반복 평가해 불일치가 감지되면 자동으로 하나를 채택하지 않고 재시도, `MANUAL_REVIEW`, 또는 명시적 오류로 전환한다. 원본 평가 결과와 후속 검토 이력을 모두 보존한다. 동일 입력에 항상 동일한 결과가 나온다고 보장하지 않으며, 재현 가능성은 동일 입력·구성·출력과 검토 이력을 추적할 수 있다는 뜻으로 사용한다.
+- 공식 기준에 없는 가중치나 합격선을 임의로 만들지 않는다. 산식이 승인되기 전에는 숫자를 확정하지 않고 Open Decision으로 남긴다. 세부 목록은 [PRD.md](PRD.md)의 Open Decisions를 따른다.
+
+### ISMS-P Source Adapter
+
+```text
+ISMS-P Source Adapter
+  → 공식 항목 / Mapping / Evidence / 적용범위
+  → 공통 LLM Scoring Harness
+  → ISMS-P Readiness 표현
+  → Mapping Coverage / Evidence Readiness / Manual Review / Readiness Score
+```
+
+ISMS-P는 위 공통 구조를 사용하는 Source 유형 중 하나이며, 공식 인증으로 오인되지 않도록 다음 표시·제약만 추가로 갖는다.
+
+- 화면·응답에 항상 "공식 인증 결과가 아님" disclaimer, 기준 문서 버전, 평가 시점을 함께 표시한다(표시 규칙은 "Web Application" 절 "점수 표시 규칙" 참고).
+- 허용/금지 명칭은 [NAMING.md](NAMING.md)를 따른다.
+- 서면심사·현장심사·인증위원회 심의를 대체하지 않는다([PRD.md](PRD.md) "ISMS-P").
 
 ## Assessment
 
@@ -270,6 +501,16 @@ Request → Job(DynamoDB) → Workflow
 - Terraform State Backend/Locking의 팀 개발환경 운영 규칙
 - OIDC Subject/Environment 조건
 - 데이터별 보존기간과 SLO
+- LLM Scoring Harness의 Source별 rubric, 가중치, 반복 평가 횟수, Manual Review Threshold — 세부 목록은 [PRD.md](PRD.md) Open Decisions를 따른다
+- Web Application의 Router, 상태관리 라이브러리, 빌드 도구, 정적 호스팅/CDN 선택
+- Web Application 접근성 준수 레벨과 자동 검증 도구
+- `/chat`, `/findings`, `/isms-p`, `/repositories`, `/users`, `/audit` 화면의 모듈 디렉터리 위치와 Owner
+- sync로 끝난 `POST /chat`의 Job 마감 상태와 `job_id` 노출 여부
+- async로 넘어간 Policy Q&A 답변의 조회 Endpoint
+- Chat/Routing 단계에 해당하는 `JobCurrentStep`과 Endpoint별 `job_type` 값
+- `POST /deployments/{id}/approval`의 응답 Contract와 `REJECT` 시 Job terminal 상태
+- Job Polling 주기·최대 시간·backoff, Job 최대 실행시간과 초과 시 상태
+- Job 응답의 timestamp field 포함 여부
 
 ## 근거 문서
 

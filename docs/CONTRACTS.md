@@ -21,7 +21,7 @@
 - Required: `job_id`, `job_type`, `status`, `current_step`
 - Optional/conditional: `assessment_id`, `remediation_id`, `deployment_id`, `error`
 - Status: `QUEUED`, `RUNNING`, `WAITING_REVIEW`, `WAITING_APPROVAL`, `COMPLETED`, `FAILED`, `CANCELLED`
-- Validation: 요청 접수 시 즉시 생성하며 sync→async 전환에도 같은 ID를 유지한다. Domain ID는 해당 단계 진입 시 생성한다.
+- Validation: start 전제조건 검증을 통과한 요청에 대해 접수 시점에 생성하며, 같은 요청이 sync 응답에서 async Polling으로 넘어가도 새 Job을 만들지 않고 같은 ID를 유지한다. 검증에 실패해 거절되는 요청은 Job을 만들지 않는다(예: `POST /assessments`의 `EFFECTIVE_RULE_SET_EMPTY`). Domain ID는 해당 단계 진입 시 생성한다. 여기서 "sync→async 전환"은 HTTP 응답 모드 전환만 가리키며 실행 Runtime 전환과 무관하다([DESIGN.md](DESIGN.md) "Job 실행 모드와 sync/async 전환").
 - Versioning: Job Schema version field는 Open Decision이다.
 
 `current_step`의 현재 확정 집합:
@@ -296,17 +296,17 @@ Rule Candidate의 Structured Output은 `resource_type`, `control_key`, `evaluati
 
 ## AssessmentResult / RuleEvaluation
 
-현재 Workflow 문서의 객체 이름은 `AssessmentResult`이며 의미상 Resource × Rule의 Rule Evaluation이다.
+현재 Workflow 문서의 객체 이름은 `AssessmentResult`이며 의미상 Resource × Rule의 Rule Evaluation이다. Global Policy, Customer Policy, AWS Governance/Security Source, ISMS-P를 포함한 모든 Source는 이 하나의 공통 계약을 공유하는 공통 LLM Scoring Harness의 출력이다([DESIGN.md](DESIGN.md) "LLM Scoring Harness"). Source별 고유 표현(예: ISMS-P Readiness)은 이 위에 별도 View/확장 Contract로 둔다.
 
 - Purpose: 판정·Severity·Evidence·실행 상태의 평가 정본
-- Producer: Assessment Agent 출력 + Schema Validator
+- Producer: 공통 LLM Scoring Harness 출력 + Schema Validator
 - Consumer: Finding 생성, Report, Scoring, Audit
 - Required: `assessment_result_id`, `assessment_id`, `resource_id`, `control_key`, `rule_id`, `rule_version`, `source_type`, `evaluation_status`, `severity`, `execution_status`
-- Conditional: Evidence, explanation, error/reference의 정확한 필드는 Open Decision
+- Conditional(재현성 근거, 정확한 필드명은 Open Decision): Evidence citation, rationale(판단 근거), manual_review_reason, evaluator/prompt/rubric/model/harness version, error/reference
 - Governance status: `PASS`, `FAIL`, `MANUAL_REVIEW`, `NOT_APPLICABLE`; 실행 오류일 때는 `null`
 - Execution status: 최소 `SUCCESS`, `ERROR`
-- Validation: 실제 Rule/Version/Source/Enum을 검증한다. Tool/Agent 오류는 `evaluation_status = null`, `execution_status = ERROR`로 표현하며 `FAIL`을 만들지 않는다.
-- Versioning: Rule Version과 Assessment 재현성 pin을 따른다.
+- Validation: 실제 Rule/Version/Source/Enum을 검증한다. Tool/Agent 오류는 `evaluation_status = null`, `execution_status = ERROR`로 표현하며 `FAIL`을 만들지 않는다. `evaluation_status`/`severity`가 항목별로 채워지면(즉 LLM 판정이 확정되면) 이후 Source별 집계(`calculate_source_metrics`)만 결정론적으로 수행하고 판정 자체를 다시 계산하지 않는다.
+- Versioning: Rule Version과 Assessment 재현성 pin을 따른다. LLM 판정을 사용한 Rule은 Evaluator/Prompt/Rubric/Model/Harness Version도 함께 pin한다.
 
 Unit Disposition의 설계 어휘는 `NA_OUT_OF_SCOPE`, `MANUAL_REVIEW_SCOPE_UNDETERMINED`, `MANUAL_REVIEW_CRITERION_UNAVAILABLE`, `TO_JUDGE_PARTIAL`, `TO_JUDGE`다. 이것을 외부 `evaluation_status`와 어떻게 매핑할지는 Open Decision이다.
 
@@ -399,7 +399,7 @@ LOW      = 1
 - 계산 경계: Policy Source별 독립 partition
 - 금지: Cross-Source Overall Score, Control Group 최고 Severity 병합, Score 단독 배포 Gate
 
-실행 Contract는 `(RuleEvaluationMetric[], EffectiveRuleSet) → SourceScoreCoverage[]`다. 입력은 `resource_id`, pin된 `rule_id + rule_version`, `source_id`, `source_type`, Rule의 `severity`, `evaluation_status`, `execution_status`를 전달한다. 출력은 Source별 `score`, `coverage`, status별 count, `scoring_version = "1"`을 보존한다. 결과 배열 자체에는 Overall field를 두지 않는다. `source_id`는 C가 Rule의 검증된 Source Reference에서 전달하는 필드다. Scoring 방향은 C가 Producer, B가 Consumer다.
+실행 Contract는 `(RuleEvaluationMetric[], EffectiveRuleSet) → SourceScoreCoverage[]`다. 입력의 `evaluation_status`는 공통 LLM Scoring Harness가 이미 판정한 값이며, 이 Contract는 그 결과를 기계적으로 집계할 뿐 판정을 다시 계산하지 않는다. 입력은 `resource_id`, pin된 `rule_id + rule_version`, `source_id`, `source_type`, Rule의 `severity`, `evaluation_status`, `execution_status`를 전달한다. 출력은 Source별 `score`, `coverage`, status별 count, `scoring_version = "1"`을 보존한다. 결과 배열 자체에는 Overall field를 두지 않는다. `source_id`는 C가 Rule의 검증된 Source Reference에서 전달하는 필드다. Scoring 방향은 C가 Producer, B가 Consumer다.
 
 ### scoring_version
 
@@ -448,6 +448,25 @@ ISMS-P는 `calculate_source_metrics` 입력이 아니며 독립 Compliance Score
 - `OUT_OF_SCOPE`
 
 Mapping Coverage는 선택한 ISMS-P 항목 중 하나 이상의 Project Control에 연결된 항목 비율이다. PASS 비율, 준수율, 인증 점수 또는 인증 가능성 예측이 아니다. Evidence Readiness는 위 상태의 건수 분포로만 표시한다. `fixtures/policy/isms-readiness-golden.json`은 계산과 추적 Contract용 비권위 제안 Mapping이며, 공식 Mapping 승인을 의미하지 않는다.
+
+#### ISMS-P Readiness Score (Target Contract)
+
+목표 제품은 위 Mapping Coverage/Evidence Readiness에 더해 자체 정의 `ISMS-P Readiness Score`를 제공한다([PRD.md](PRD.md) "ISMS-P"). 이 Score는 위 "AssessmentResult / RuleEvaluation"(공통 LLM Scoring Harness 출력)을 ISMS-P 항목 단위로 기계적 집계한 View이며, 아직 실행 Contract, Registry, Fixture, Contract Test가 없는 Target Requirement이고 산식은 Open Decision이다. 이 절은 산식이 결정되기 전에도 개발 가능한 입력/출력/불변조건/상태/버전 경계만 정의한다.
+
+- Purpose: 공식 인증 결과가 아닌, 심사 준비 우선순위 판단을 돕는 자체 정의 지표
+- Producer: 공통 LLM Scoring Harness가 판정한 RuleEvaluation 결과를 ISMS-P 항목 단위로 소비하는 결정론적 Scoring Aggregator
+- Consumer: Frontend ISMS-P Readiness Dashboard, Report, Audit
+- Required(확정): `source_id`("ISMS-P"), `source_version`(기준 문서 버전, 현재 인증기준 안내서 `2023.11.23`), `applied_scope`(선택 항목 범위), `evaluated_at`, `evidence_snapshot_reference`, `scoring_version`
+- Required(항상 함께 표시, 값 산식은 Open Decision): `readiness_score`, `mapping_coverage`, `evidence_coverage`, `not_evaluated_count`, `manual_review_count`, `execution_error_count`
+- 불변조건:
+  - `readiness_score`는 `OUT_OF_SCOPE` 항목을 분자·분모에 포함하지 않는다.
+  - `MANUAL_REVIEW`와 `EXECUTION_ERROR`는 자동으로 통과(PASS-equivalent)로 집계하지 않는다. 두 상태의 처리 방식(분모 포함 여부, 점수 표시 차단 여부)은 Open Decision이다.
+  - `readiness_score`는 어떤 필드명·값으로도 공식 인증 점수·합격 여부로 오인될 수 없어야 한다([NAMING.md](NAMING.md) 금지 명칭).
+  - 과거 결과는 덮어쓰지 않는다. 같은 Project를 다시 평가하면 새 Snapshot을 만든다.
+- Versioning: `scoring_version`은 판정 로직 또는 산식이 같은 입력에 다른 출력을 낼 때만 올린다(governance `scoring_version` 규칙과 동일 원칙). 과거 pin된 version은 재현을 위해 계속 지원한다.
+- Open Decision: 항목별 상태/부분점수 정책, 가중치 여부, 분모 포함·제외 규칙, `OUT_OF_SCOPE`/`MANUAL_REVIEW`/`EXECUTION_ERROR` 처리, 최소 Automated Assessment Coverage, 점수 표시 가능 조건, 결정 Owner, 권장 기본안과 장단점. 전체 목록은 [PRD.md](PRD.md) Open Decisions를 정본으로 따른다.
+
+LLM Scoring Harness의 처리 구조와 판정 불일치 처리는 [DESIGN.md](DESIGN.md) "LLM Scoring Harness"가 정본이다. 이 Contract는 그 결과인 Evaluator/Prompt/Rubric/Model/Harness Version을 재현성 근거로 함께 보존해야 한다는 점만 요구한다.
 
 ## Rule 지원 Coverage 보고 용어
 
