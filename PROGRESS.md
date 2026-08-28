@@ -32,7 +32,7 @@
 ## Next
 
 - V3 협업 방식(Issue 미사용, `.ai/task` 누적, 기능별 새 Session)을 팀이 확인하고 각 영역 Owner가 첫 기능 `taskN.md`를 정의한다.
-- Notion `V3 확인 필요 사항`의 Q15~Q18(Observability/Cloud 보강, 권한·자동화 경계, 새 기능 시작 자동화 수준)을 팀 논의로 확정한다.
+- Notion `V3 확인 필요 사항`의 Q15~Q20(Observability/Cloud 보강, 권한·자동화 경계, 새 기능 시작 자동화 수준, 코드 리뷰 자동화, Milestone 확정)을 팀 논의로 확정한다.
 
 ## Blocked
 
@@ -42,9 +42,16 @@
 
 ## Milestone
 
-| Milestone | 범위 | 상태 |
-| --- | --- | --- |
-| (사람이 종합 판단해 기간·범위·우선순위를 채운다) | - | - |
+> 아래는 **범위 위주 초안**이다. 기간(날짜)과 Owner 간 우선순위는 사람이 종합 판단해 채운다(`TODO`). 전체 순서는 Notion `V3 확인 필요 사항` Q15~Q20 결정과 연결되므로, 그 항목을 먼저 정리한 뒤 확정하는 것을 권장한다.
+
+| Milestone | 범위(초안) | 관여 영역 | 완료 기준(Acceptance) | 기간 | 상태 |
+| --- | --- | --- | --- | --- | --- |
+| M0 V3 전환 확정 | 협업 방식(Issue 미사용, `.ai/task`+`PROGRESS.md`, 새 Session) 문서·규칙 정비 merge | 공유 | 구현문서 PR(#53) merge, 각 Owner PROGRESS backfill 완료 | TODO | 진행 중 |
+| M1 첫 기능 슬라이스 | S3 IaC Assessment closed-loop(Finding → PR → CI/plan → Human Approval → apply → Post-Deploy) 1건 | A/B/C/D | 실제 취약 S3 fixture 1건이 평가·개선·승인·배포·재검증 완주 | TODO | 대기 |
+| M2 Resource·Rule 확장 | 대상 Resource/Rule 확대, Policy Source(사내정책+ISMS-P) 반영 | B/C/D | 확정된 Rule 집합이 ACTIVE로 평가되고 Contract Test 통과 | TODO | 대기 |
+| M3 통합·E2E·Release | 전체 통합, E2E/Release 검증 후 `dev → main` 1회 | 공유 | E2E 통과, 사람이 `dev → main` 통합 PR 1회 수행 | TODO | 대기 |
+
+의존: M1 범위는 Q17(S3 단일 슬라이스 vs Resource 확장)·ADR 0002와, M2 범위는 Q(AI Score/RAG/ISMS-P Enum/Resource) 결정과 연결된다. 확정 전에는 초안 상태로 둔다.
 
 ## Validation 상태
 
