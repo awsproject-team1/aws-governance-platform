@@ -9,9 +9,10 @@
 ## 핵심 목표
 
 - 고객이 실제 운영하는 GitHub IaC Repository를 평가의 시작점으로 사용합니다.
-- 평가 범위·Rule 선택·Schema·상태 전이는 결정론적으로 통제하고, 의미 해석과 개선안 생성에 Agent를 사용합니다.
+- 평가 범위·Rule 선택·Schema·상태 전이는 결정론적으로 통제하고, 등록된 모든 Source(Global Policy, Customer Policy, AWS Governance/Security Source, ISMS-P 등)의 Rule 판정과 Scoring은 공통 LLM Scoring Harness가 담당합니다(자세한 내용은 [docs/PRD.md](docs/PRD.md), [docs/DESIGN.md](docs/DESIGN.md)).
 - Agent Runtime은 고객 Workload에 Read-Only로 접근하고 실제 변경은 Human Approval 이후 GitHub Actions가 수행합니다.
 - Rule, Evidence, Assessment, Finding, Approval, Deployment 결과를 재현·감사할 수 있게 보존합니다.
+- ISMS-P는 이 구조를 사용하는 Compliance Source 중 하나로 심사 준비도를 제공하며 공식 인증심사·인증기관을 대체하지 않습니다.
 
 ## MVP Workflow
 

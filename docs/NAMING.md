@@ -169,6 +169,11 @@ Control Key는 향후 Control Registry가 소유한다. 위 값은 Shared Contra
 
 ## Source 결과 표시 이름
 
+모든 Source 공통으로 다음 이름을 사용한다.
+
+- `LLM Evaluation`: 공통 LLM Scoring Harness의 개별 Rule 판정 행위
+- `Assessment Score`: 하나의 Assessment 실행에 대한 결과 요약(Source별 Score/Coverage를 포괄하는 상위 표시 맥락에서만 사용하며, Cross-Source Overall Score를 의미하지 않는다)
+
 내부 산식의 Source별 결과는 다음 표시 이름을 사용한다.
 
 - `FSBP 기반 Governance Score`
@@ -178,8 +183,11 @@ Control Key는 향후 Control Registry가 소유한다. 위 값은 Shared Contra
 - `Source별 Evaluation Coverage`
 - `ISMS-P Mapping Coverage`
 - `ISMS-P Evidence Readiness`
+- `ISMS-P Readiness Score` / `ISMS-P 심사 준비도`
+- `Automated Assessment Coverage`
+- `Manual Review Remaining`
 
-공식 산식과 동일한 구현이 아니므로 `AWS Security Hub Score`, `공식 FSBP Score`, `공식 CIS Score`, `ISMS-P Compliance Score`, `ISMS-P 인증 점수`는 사용하지 않는다. Core/Foundational/Hygiene/Control Tower Profile 이름은 개념적 설명이며 production Profile ID와 이름은 계속 Open Decision이다.
+공식 산식과 동일한 구현이 아니므로 `AWS Security Hub Score`, `공식 FSBP Score`, `공식 CIS Score`, `ISMS-P Compliance Score`, `ISMS-P 인증 점수`, `공식 ISMS-P Score`, `인증 가능성 점수`, `예상 합격률`은 사용하지 않는다. Core/Foundational/Hygiene/Control Tower Profile 이름은 개념적 설명이며 production Profile ID와 이름은 계속 Open Decision이다.
 
 ## Domain ID와 API Field
 

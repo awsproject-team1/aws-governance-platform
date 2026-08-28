@@ -10,7 +10,7 @@ Cloud Governance & Compliance Agent는 기업의 실제 운영 Terraform/IaC와 
 
 기업의 AWS Governance 기준은 사내 정책, AWS 권장사항, 보안·Compliance Framework에 분산되어 있다. 이를 실제 IaC 및 현재 AWS 상태에 대조하고, 판정 근거와 버전을 보존하며, 안전한 개선과 재검증까지 연결하는 과정은 수작업 비용과 일관성 문제가 크다.
 
-이 제품은 LLM이 임의의 정책 기준을 만들게 하지 않는다. Code와 Schema가 평가 대상·Rule·상태 전이를 고정하고, LLM은 고정된 경계 안에서 의미 해석과 개선안 생성을 담당한다.
+이 제품은 LLM이 임의의 정책 기준, Threshold, Evidence 또는 누락된 사실을 창작하게 하지 않는다. Code와 Schema는 Source/Rule/Evidence/Scope 수집·정규화, ID/Version pinning, 적용 Rule Set·Prompt/Rubric 선택, 입출력 Schema 검증, Workflow·권한·중복 방지·Audit, 그리고 이미 판정된 항목 점수의 기계적 합산만 담당한다. Global Policy, Customer Policy, AWS Governance/Security Source, ISMS-P를 포함한 모든 등록 Source의 개별 Rule Evaluation — Evidence와 요구사항의 의미 비교, 항목별 평가 상태와 Score, 판단 근거, Manual Review 필요 여부 — 은 공통 LLM Scoring Harness가 판정한다(Rule Evaluation과 그 결과의 기계적 집계는 서로 다른 계층이다). LLM 출력은 Schema, 허용 상태, Evidence 인용, Rule/Evidence/Prompt/Rubric/Model/Harness Version으로 검증하며, 필요하면 반복 평가로 불일치를 감지해 재시도·`MANUAL_REVIEW`·명시적 오류로 전환한다. 동일 입력에 항상 동일한 결과가 나온다고 보장하지 않으며, 재현 가능성은 동일 입력·구성·출력과 검토 이력을 추적할 수 있다는 뜻으로 사용한다. 판정 입력이 확정된 뒤의 집계 자체는 결정론적으로 구현한다.
 
 ## Target Customer
 
@@ -19,9 +19,8 @@ Cloud Governance & Compliance Agent는 기업의 실제 운영 Terraform/IaC와 
 - 자체 보안·Cloud Governance 정책을 보유한다.
 - AWS를 Terraform 기반 IaC로 운영한다.
 - 사내 정책과 여러 외부 보안·Compliance 기준을 IaC 및 실제 AWS 상태와 함께 평가하려 한다.
-- 고객 내부 전문가가 직접 운영하는 Self-Managed 방식 또는 선택적인 Provider Expert Assistance를 사용할 수 있다.
 
-Provider Expert Assistance는 Policy Mapping과 Rule/Finding/Remediation 방향 검토를 지원한다. 최종 Rule 승인, Remediation 승인, Apply 결정은 고객 책임이며 Provider의 고객 AWS Account 상시 접근을 전제하지 않는다.
+고객 내부 전문가가 직접 운영하는 Self-Managed 방식과, 전문가가 Policy Mapping·Rule/Finding/Remediation 방향 검토를 지원하는 선택적 Provider Expert Assistance 모델은 사업 가설(Proposed)이다. 이를 뒷받침하는 승인된 운영·계약·RBAC 설계나 근거 문서가 아직 없으므로 확정 요구사항으로 다루지 않는다. 어느 모델을 사용하든 최종 Rule 승인, Remediation 승인, Apply 결정은 항상 고객 책임이며, Provider의 고객 AWS Account 상시 접근을 전제하지 않는다는 보안 경계만 확정 원칙으로 유지한다. 두 모델의 상세 정의, 제공 범위, 계약/과금 구조는 Open Decision이다.
 
 ## 사용자와 Role
 
@@ -39,7 +38,7 @@ Frontend에서 메뉴를 숨기는 것만으로 권한을 통제하지 않으며
 - `Resource × Rule` 단위 결과와 FAIL Finding을 근거·Severity·Version과 함께 보존한다.
 - 선택된 Finding을 최소 Terraform Patch/Diff, PR, 검증, 승인, Apply, 재평가까지 연결한다.
 - Agent의 AWS Write 권한을 제거하고 사람의 명시적 승인에 변경 권한을 묶는다.
-- Source별 Score/Coverage와 전체 상태 요약을 감사 가능하게 제공한다.
+- 등록된 모든 Source(Global Policy, Customer Policy, AWS Governance/Security Source, ISMS-P 등)에 공통 LLM Scoring Harness를 적용해 Resource × Rule Evaluation과 Source별 Score/Coverage를 감사 가능하게 제공한다. ISMS-P는 이 구조를 사용하는 Source 중 하나로서 심사 준비도(Readiness) 지표를 제공하며, 공식 인증심사·인증기관을 대체하지 않는다.
 
 ## Non-Goals
 
@@ -49,6 +48,7 @@ Frontend에서 메뉴를 숨기는 것만으로 권한을 통제하지 않으며
 - Cross-Source 단일 최종 Status/Severity/Overall Score 생성
 - 고객 Terraform State의 소유·대체·자동 Import
 - 자연어만으로 신규 Infrastructure Desired Model 생성
+- 어떤 Source에서도 공식 인증 점수, 합격 여부 예측, 심사 수수료·기간 단축 보장을 제공하지 않는다 (허용/금지 명칭은 [NAMING.md](NAMING.md)를 따른다)
 
 ## MVP Scope
 
@@ -78,6 +78,14 @@ Proposed label은 Shared Contract/Registry에 예약되지 않았고 ACTIVE Rule
 
 `aws_s3_bucket_public_access_block`은 별도 평가 대상 Resource가 아니라 S3 Bucket Rule candidate의 companion Terraform construct이자 Remediation target이다. Security Group, IAM, VPC, CloudTrail과 추가 Rule은 첫 Closed-loop가 통합 검증된 후 확장한다.
 
+### ISMS-P
+
+ISMS-P는 공통 LLM Scoring Harness를 사용하는 Compliance Source 중 하나다(Current Implementation의 `packages/governance/compliance/readiness.py`는 Mapping Coverage/Evidence Readiness만 산출하며, Readiness Score 산출은 Target Requirement). 정의와 계약은 [CONTRACTS.md](CONTRACTS.md) "ISMS-P Readiness Score"를 따른다.
+
+ISMS-P 심사는 서면심사(정책·지침·절차·운영 문서와 이행 증거자료 검토)와 현장심사(담당자 면담, 시스템 확인, 기술적·물리적 보호대책 확인, 취약점 점검, 예비점검·보완조치 현장점검 포함)로 구성되며(Verified Fact, 근거 문서 참고), 공식 인증수수료는 심사원 직접인건비·제경비·기술료·직접경비로 구성되어 인증범위·심사기간·심사인력의 영향을 받는다(Verified Fact). 따라서 이 제품의 자동 평가는 심사 준비를 지원할 뿐 공식 서면·현장심사, 인증위원회 심의, 인증수수료·심사기간 산정을 대체하지 않는다. 허용/금지 명칭은 [NAMING.md](NAMING.md)를 따른다.
+
+고객의 문서·증적 준비시간 및 반복 대응 감소는 검증할 제품 가설(Proposed)이다.
+
 ## 주요 User Flow
 
 ### Policy Q&A
@@ -93,6 +101,8 @@ Admin이 관리한 Policy Profile과 고객 Repository를 User가 선택한다. 
 ### Remediation과 Deployment
 
 User가 Finding 하나를 선택하면 시스템이 최소 Patch/Diff와 영향 설명을 생성하고 고객 Repository에 PR을 만든다. CI와 Pre-Deploy 검증 및 Plan이 성공한 뒤 Human Approval을 받고, GitHub Actions가 Apply한다. 이후 최신 IaC와 AWS 상태를 다시 확인하고 새 Post-Deploy Assessment를 생성한다.
+
+ISMS-P Readiness 조회를 포함한 화면별 상세 흐름은 [DESIGN.md](DESIGN.md)의 "Web Application" 절을 따른다.
 
 ## Functional Requirements
 
@@ -110,8 +120,9 @@ User가 Finding 하나를 선택하면 시스템이 최소 Patch/Diff와 영향 
 
 ## Non-Functional Requirements
 
-- Auditability: 요청, Rule Version, Evidence, 판정, 승인, 배포 결과를 연결해 추적한다.
-- Reproducibility: Commit/IaC Snapshot, Policy Profile Version, Effective Rule Set, Admin Settings Snapshot, Phase, Scoring Version을 보존한다.
+- Auditability: 요청, Rule Version, Evidence, LLM Scoring Harness 판정(Prompt/Rubric/Model/Harness Version 포함), 승인, 배포 결과를 연결해 추적한다.
+- Reproducibility: Commit/IaC Snapshot, Policy Profile Version, Effective Rule Set, Admin Settings Snapshot, Phase, Scoring Version(Harness Version 포함)을 보존해 동일 입력·구성의 재평가를 추적할 수 있게 한다.
+- Consistency: LLM Scoring Harness의 절대적 결정성을 보장한다고 표현하지 않는다(Problem Statement 참고). 반복 판정 불일치는 `MANUAL_REVIEW` 또는 명시적 오류로 전환한다.
 - Reliability: 비동기 Job, 오류 상태 분리, 승인 기반 중단·재개, Post-Deploy 검증을 지원한다.
 - Security: 최소 권한, RBAC, OIDC, Structured Validation, CI/Plan/Approval의 계층적 방어를 적용한다.
 - Cost: 관리형 서비스를 우선하고 실제 AWS 조회와 고비용 Resource 사용을 필요한 시점으로 제한한다.
@@ -166,10 +177,11 @@ Public Access Block이 없거나 불완전한 S3 Terraform
 
 ## Open Decisions
 
-- 최초 S3 Slice 이후 확장할 Resource와 Rule 우선순위
-- Agent Model Routing 기준
+- 최초 S3 Slice 이후 확장할 Resource와 Rule 우선순위, ISMS-P를 포함한 추가 Source를 MVP Success Criteria에 포함할 시점
+- Agent Model Routing 기준(구체 모델, temperature/seed 등 파라미터 포함)
 - Policy/Assessment/Remediation Skill 구현 방식
-- 결정론적 Check Registry로 분리할 추가 Rule 범위
+- LLM Scoring Harness의 반복 평가 횟수와 불일치 검증 방식, `MANUAL_REVIEW` 전환 Threshold
+- Source별 rubric, 부분점수, 가중치, 합격선과 Readiness Score 산식 세부 — 목록은 [CONTRACTS.md](CONTRACTS.md) "ISMS-P Readiness Score"를 정본으로 따른다("모든 Source의 의미 평가·scoring을 LLM Scoring Harness가 담당한다"는 방향 자체는 Open Decision이 아니다)
 - 구체 SLO와 데이터 보존기간
 
 ## 근거 문서
@@ -177,3 +189,7 @@ Public Access Block이 없거나 불완전한 S3 Terraform
 - [Notion — 최종 계획서](https://app.notion.com/p/3c66e3d0b32581048803f9c4ac214a10)
 - [Notion — 01. 프로젝트 개요 · 범위 · 사용자 구조](https://app.notion.com/p/3c66e3d0b3258108807fd0feba897264)
 - [Notion — 07. MVP · 구현 우선순위 · 미결정사항](https://app.notion.com/p/3c66e3d0b3258140a9f3c1b85045f60e)
+- [ISMS-P 인증 신청](https://isms-p.or.kr/cert/aply/selectCertAplyRegistForm.do) — 확인일 2026-08-28
+- [ISMS-P 인증 절차](https://isms-p.or.kr/cert/aply/selectCertPrcdDetail.do) — 확인일 2026-08-28
+- [ISMS-P 공식 자료실 — 인증수수료 산정내역서 v1.9(2024-07-24 게시)](https://isms-p.or.kr/ntcn/rcsrm/selectGnrlRcsrmList.do) — 확인일 2026-08-28
+- [정보보호 및 개인정보보호 관리체계 인증 등에 관한 고시](https://law.go.kr/LSW/admRulLsInfoP.do?admRulId=23559&efYd=0) — 개인정보보호위원회, 시행일 2024-07-24, 확인일 2026-08-28

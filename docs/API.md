@@ -8,7 +8,8 @@
 - Product Role은 `cognito:groups`의 정확한 `Admin`, `User` 값만 사용하며 Request Body나 Frontend 상태에서 Role을 받지 않는다. `Admin`은 User 기능을 포함한다.
 - 현재 실행 가능한 권한 정본은 `START_ASSESSMENT`(`POST /assessments`)와 `READ_JOB`(`GET /jobs/{job_id}`)이며 Admin/User 모두 허용한다. 다른 Endpoint의 Action/Role Matrix는 Open Decision이고 등록 전까지 허용하지 않는다.
 - 명시적인 Assessment/Remediation UI는 전용 API를 호출하며 자연어 Router를 거치지 않는다.
-- 장시간 Workflow는 `202 Accepted + job_id`를 반환하고 `GET /jobs/{job_id}` Polling으로 추적한다.
+- 장시간 Workflow는 `202 Accepted + job_id`를 반환하고 `GET /jobs/{job_id}` Polling으로 추적한다. 응답 모드(sync/async) 판단 규칙과 미결정 항목은 [DESIGN.md](DESIGN.md) "Job 실행 모드와 sync/async 전환"을 정본으로 사용한다.
+- 조건부 sync는 `POST /chat`에만 적용된다. 다른 Workflow Endpoint는 짧게 끝나도 `202`를 반환한다.
 - Job API는 진행 상태와 연결 ID만 반환한다. 실제 결과는 Domain API로 조회한다.
 - API Callback/SSE/WebSocket은 MVP에 포함하지 않는다.
 - 정확한 Content-Type, Pagination, Idempotency Key, API version prefix와 Role별 Endpoint Matrix는 Open Decision이다.
@@ -30,6 +31,8 @@
 | `GET` | `/deployments/{deployment_id}` | PR/Plan/Approval/Apply 상태 조회 | Sync | Deployment |
 | `POST` | `/deployments/{deployment_id}/approval` | Apply 승인 또는 거절 | Async resume/terminate | Deployment |
 | `GET` | `/jobs/{job_id}` | Workflow 진행 상태 Polling | Sync | Job, Error |
+| `GET` | `/compliance/isms-p/readiness` | ISMS-P Readiness 목록 조회(Target) | Sync | ISMS-P Readiness Score, Mapping Coverage, Evidence Readiness |
+| `GET` | `/compliance/isms-p/readiness/{item_id}` | 항목별 Evidence/Manual Review 상세 조회(Target) | Sync | ComplianceItemMapping |
 
 모든 Endpoint는 인증 대상이다. 현재 확정된 `POST /assessments`와 `GET /jobs/{job_id}` 외 Endpoint의 Admin/User 허용 Matrix는 Open Decision이며, Backend Action Policy에 등록되기 전까지 허용하지 않는다. Frontend 표시만으로 권한을 허용하지 않는다.
 
@@ -77,7 +80,9 @@ Policy Q&A가 설정된 sync wait 안에 완료되면:
 }
 ```
 
-내부 sync timeout은 10초 초기값을 기준으로 검토하되 환경변수 이름과 운영값은 구현 시 확정한다.
+내부 sync timeout은 10초 초기값을 기준으로 검토하되 환경변수 이름과 운영값은 구현 시 확정한다. 이 값은 Backend 내부 대기이므로 Web Application 공통 HTTP timeout은 이보다 커야 한다.
+
+`200` 응답에는 `job_id`가 없다. 요청 접수 시 생성한 Job을 어떤 상태로 마감하는지, 그 `job_id`를 응답에 포함할지는 아직 정의되지 않았다. 또한 async로 넘어간 Policy Q&A 답변을 회수하는 Endpoint와 Chat Job이 사용할 `current_step`·`job_type` 값도 정의되지 않았다. `JobCurrentStep`은 닫힌 집합이며 현재 Chat 단계를 포함하지 않으므로 구현 시 임의의 값을 고르지 말고 Contract를 먼저 확정한다.
 
 ## Repository
 
@@ -187,7 +192,7 @@ Purpose: Resource × Rule 상세 판정 조회.
 }
 ```
 
-Pagination과 collection field 이름은 실행 Contract에서 함께 확정하며 현재 `items`는 response candidate example이다.
+Pagination과 collection field 이름은 실행 Contract에서 함께 확정하며 현재 `items`는 response candidate example이다. `evaluation_status`는 공통 LLM Scoring Harness의 판정 결과다. Evidence citation, rationale, evaluator/prompt/rubric/model/harness version 같은 evaluation provenance 필드의 노출 여부와 이름은 [CONTRACTS.md](CONTRACTS.md) AssessmentResult/RuleEvaluation 확정 후 함께 정한다.
 
 ### `GET /assessments/{assessment_id}/findings`
 
@@ -325,6 +330,8 @@ Apply/Verification field 이름과 상태 어휘는 Shared Contract 구현 전�
 
 Backend가 인증 Context에서 승인자와 시각을 기록한다. Request에서 `approved_by`를 받지 않는다. 승인 시 현재 Commit SHA와 Plan Hash를 고정하고 Workflow를 재개한다. Apply 직전 값이 다르면 기존 승인을 무효화하고 재검증·재승인을 요구한다.
 
+이 Endpoint의 성공 HTTP status code와 응답 body, 그리고 `REJECT`가 연결된 Job을 어떤 terminal 상태로 보내는지는 아직 정의되지 않았다. `WAITING_APPROVAL`에서 도달 가능한 terminal 상태는 `FAILED`와 `CANCELLED`뿐이지만([CONTRACTS.md](CONTRACTS.md) Job) `REJECT`를 어느 쪽으로 볼지는 Contract 확정 대상이다.
+
 ## Job
 
 ### `GET /jobs/{job_id}`
@@ -349,6 +356,55 @@ Finding, Report, Patch, Plan 본문은 이 API가 반환하지 않는다.
 실행 가능한 응답 정본은 `packages.contracts.JobResponse`이며 상태와 단계는 각각 `JobStatus`, `JobCurrentStep`으로 제한한다. `job_type`과 연결 ID는 opaque non-empty string이고 연결 전 ID는 `null`이다. Job 내부 `error`는 공개 `ApiError` detail 또는 `null`이며 `ApiErrorResponse`의 최상위 envelope를 중첩하지 않는다. 닫힌 `job_type` 집합과 `QUEUED`의 기본 `current_step`은 Open Decision이다.
 
 내부 Job의 `requested_by`와 `revision`은 이 응답에 포함하지 않는다. Backend는 action-level `READ_JOB` 확인 뒤 User에게 `requested_by`가 자신의 Cognito subject와 같은 Job만 반환하고 Admin에게는 모든 Job 조회를 허용한다. 존재 여부와 소유권 거부를 HTTP에서 구분할지는 Handler Contract에서 확정한다.
+
+## ISMS-P Readiness (Target Contract)
+
+아래 두 Endpoint는 아직 구현되지 않은 `Target Contract`다. ISMS-P는 별도 scoring API가 아니라 `GET /assessments/{assessment_id}/results`와 같은 공통 AssessmentResult/RuleEvaluation(공통 LLM Scoring Harness 출력)을 ISMS-P 항목 단위 View로 재구성한 것이다. 정확한 field 이름, pagination, 인증 Action Matrix는 Backend Handler와 [CONTRACTS.md](CONTRACTS.md) "ISMS-P Readiness Score" 구현 시 확정한다. 어떤 필드도 공식 인증 점수·합격 여부로 해석되지 않아야 하며 명칭은 [NAMING.md](NAMING.md)를 따른다.
+
+### `GET /compliance/isms-p/readiness`
+
+Purpose: 선택한 Project/Profile의 ISMS-P Mapping Coverage, Evidence Readiness, (정의되면) Readiness Score 목록 조회.
+
+Response candidate example:
+
+```json
+{
+  "source_id": "ISMS-P",
+  "source_version": "2023.11.23",
+  "evaluated_at": "...",
+  "mapping_coverage": 62.5,
+  "evidence_coverage": null,
+  "readiness_score": null,
+  "not_evaluated_count": 0,
+  "manual_review_count": 4,
+  "execution_error_count": 0,
+  "disclaimer": "공식 ISMS-P 인증 결과가 아니며 심사 준비 지원 목적으로만 사용합니다."
+}
+```
+
+`readiness_score`와 `evidence_coverage`는 산식이 확정되기 전까지 `null`을 허용한다. `disclaimer` 문자열의 정확한 값과 다국어 처리는 Open Decision이다.
+
+### `GET /compliance/isms-p/readiness/{item_id}`
+
+Purpose: 항목 하나의 Project Control 연결, 자동/누락 Evidence, Manual Review 사유, 연결된 Finding/Remediation 조회.
+
+Response candidate example:
+
+```json
+{
+  "item_id": "2.1.1",
+  "item_title": "...",
+  "applicability_scope": "...",
+  "project_control_keys": ["s3.public_access_block.enabled"],
+  "evidence_status": "PARTIAL_EVIDENCE",
+  "automated_evidence_ids": ["ev-001"],
+  "missing_evidence": ["접근 통제 정책 문서"],
+  "finding_ids": [],
+  "remediation_ids": []
+}
+```
+
+`evidence_status` Enum은 [CONTRACTS.md](CONTRACTS.md) `EvidenceReadinessStatus`를 따른다.
 
 ## Error
 

@@ -26,8 +26,20 @@ Repository 전체 문서나 디렉터리를 기본 Context로 적재하지 않�
 | Terraform·IAM·Deployment | `docs/DESIGN.md`의 Remediation/IAM/Deployment 절 | `infrastructure/`, `ci/`, `tools/aws-resource/`, `tools/github/` | 명명은 `docs/NAMING.md`, 협업 CI는 `CONTRIBUTING.md` |
 | Git·Issue·Branch·PR·GitHub Actions | `CONTRIBUTING.md`의 관련 절 | `.github/`, `ci/` | 이름을 바꿀 때만 `docs/NAMING.md` |
 | Naming | `docs/NAMING.md` | 영향 파일 | Contract 영향이 있을 때만 `docs/CONTRACTS.md` |
+| Rule Evaluation·Scoring(모든 Source 공통 LLM Scoring Harness) | `docs/DESIGN.md`의 "LLM Scoring Harness" 절 | `packages/governance/`, `agent/` | 평가 입력·출력·버전은 `docs/CONTRACTS.md`, 제품 범위는 `docs/PRD.md` |
+| ISMS-P Readiness·Compliance Mapping | `docs/CONTRACTS.md`의 "ISMS-P Mapping Coverage / Evidence Readiness"와 "ISMS-P Readiness Score" | `packages/governance/compliance/` | 공통 평가 구조는 위 "Rule Evaluation·Scoring" 행, 명칭은 `docs/NAMING.md` |
+| Web Application(Frontend) 화면·Route·상태 | `docs/DESIGN.md`의 "Web Application" 절 | `apps/frontend/src/` | API 계약이 필요할 때 `docs/API.md`, Domain 필드가 필요할 때 `docs/CONTRACTS.md` |
 
 상위 제품 방향은 Notion, 구현 세부사항은 Repository 문서, 실행 가능한 Contract는 `packages/contracts/`가 정본이다. 실제 작업 상태는 GitHub Issue/Projects, 고객 Workload Terraform은 고객 Repository가 정본이다. 확정되지 않은 내용은 추측하지 않고 `TODO` 또는 `Open Decision`으로 남긴다. deprecated 문서가 생기면 정본으로 사용하지 않는다.
+
+문서 기반 재개발 단계에서는 다음 네 층을 구분한다.
+
+- 승인된 Target 문서(`docs/PRD.md`, `docs/DESIGN.md`, `docs/CONTRACTS.md`, `docs/API.md`, `docs/NAMING.md`의 Target/Proposed 표시 절): 새 구현이 도달해야 하는 요구사항 정본이다.
+- 현재 코드: 현재 실제로 동작하는 구현 상태를 보여주는 참고자료이며, Target 문서와 다르다는 이유로 Target 문서를 코드에 맞춰 축소하지 않는다.
+- Target Contract를 구현한 뒤의 `packages/contracts/` Schema 코드: 실행 가능한 계약 정본이며 `docs/CONTRACTS.md`와 같은 PR에서 동기화한다.
+- 코드와 Target 문서가 다른 구간: migration gap으로 추적하고, 필요한 코드 변경은 별도 구현 작업으로 남긴다.
+
+새 구현 작업을 시작할 때는 관련 정본 문서를 먼저 읽는다. 코드가 문서와 충돌하면 코드를 정본으로 간주하지 않으며, 문서가 `Target`으로 명시한 계약에 코드·fixture·test를 맞춘다. 문서의 `Open Decision`은 에이전트가 임의로 확정하지 않고 사람의 결정을 기다린다.
 
 ## Repository Map
 
