@@ -42,5 +42,8 @@ Thumbs.db
 tmp/
 *.log
 
+# Personal Coding Agent / Session state (team form shared via templates/)
+.ai/
+
 # Keep Terraform dependency lock files tracked:
 # .terraform.lock.hcl

@@ -398,6 +398,4 @@ Tool 내부 오류는 더 풍부한 `error_code`, `retryable`, `source`, `detail
 - CI/Plan/Apply를 수행하고 Deployment/Job과 결과를 연결해야 한다.
 - 결과 전달 방식, Artifact Callback, 서명/검증 Contract는 Open Decision이다.
 
-## 근거 문서
-
-- [Notion — 03. workflow/contract](https://app.notion.com/p/3c56e3d0b32580d38743ed1e6fd6b02f)
+참고: HTTP Interface 설명 정본은 이 문서, 실행 Contract는 `packages/contracts/`다. 과거 Notion 문서는 정본·참조 경로로 사용하지 않는다.

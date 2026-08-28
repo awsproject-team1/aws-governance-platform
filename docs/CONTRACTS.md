@@ -544,7 +544,4 @@ Producer/Consumer 책임은 기존 Domain 경계를 유지한다.
 
 Contract 변경 승인 방식, Schema versioning 전략, Python/TypeScript 공유 타입 생성 방식은 Open Decision이다.
 
-## 근거 문서
-
-- [Notion — 03. workflow/contract](https://app.notion.com/p/3c56e3d0b32580d38743ed1e6fd6b02f)
-- [Notion — 04. Governance Rule / Policy / Assessment / Scoring](https://app.notion.com/p/3c66e3d0b3258045bc30fcf379a5be02)
+참고: 실행 가능한 Contract 정본은 `packages/contracts/`, 설명 정본은 이 문서다. 과거 Notion 문서는 정본·참조 경로로 사용하지 않는다.

@@ -5,7 +5,7 @@
 ## 개발 흐름
 
 ```text
-Issue
+.ai/task/taskN.md (현재 기능 정의)
   → feature/fix/docs/refactor/test/chore branch
   → 구현
   → 관련 Test / Lint / Validation
@@ -13,84 +13,51 @@ Issue
   → Required CI
   → 다른 팀원 최소 1명 Review
   → Merge Commit to dev
+  → PROGRESS.md Completed 갱신
 ```
 
-안정화 시에는 다음 흐름을 사용한다.
+모든 기능이 완료되어 최종 통합·E2E/Release 검증이 가능한 시점에만 다음 흐름을 사람이 1회 수행합니다.
 
 ```text
 dev → Pull Request → Required CI / Review → Merge Commit → main
 ```
 
-`main`과 `dev`에 직접 Push하지 않습니다. `dev`에서도 직접 작업하지 않고 Issue에 연결된 short-lived branch를 사용합니다.
+`main`과 `dev`에 직접 Push하지 않습니다. `dev`에서도 직접 작업하지 않고 short-lived branch를 사용합니다.
 
-## Issue와 작업 단위
+## 작업 관리 (GitHub Issue 미사용)
 
-- 개발 시작 시 A/B/C/D Parent Issue를 만들고 Owner와 Scope를 고정합니다.
-- 실제 구현은 Parent 아래 GitHub Native Sub-issue 또는 Bug 단위로 진행합니다.
-- Parent 본문의 중복 체크리스트가 아니라 Native Sub-issue progress를 진행률 정본으로 사용합니다.
-- Sub-issue 생성 시 Parent의 **Add sub-issue** 기능을 사용하거나 생성 직후 Native 관계를 연결합니다. 본문의 `Parent Issue: #123` 텍스트만으로는 Native 관계가 생기지 않습니다.
-- Parent 전용 branch나 PR은 만들지 않습니다.
-- Sub-issue는 Review와 Merge가 가능한 크기로 유지하되 억지로 지나치게 작게 나누지 않습니다.
-- 개별 Sub-issue의 구현과 PR은 해당 Sub-issue의 Scope, Acceptance Criteria, Test / Validation을 완료 기준으로 사용합니다.
-- Sub-issue 착수 시 Parent Issue의 Goal, Scope(제외 범위 포함), 직접 의존 관계를 한 번 확인합니다. 구현 중에는 Sub-issue만으로 범위를 판단할 수 없거나 Parent 변경 알림을 받은 경우에만 Parent 전체를 다시 확인합니다.
-- Parent Issue의 전체 Acceptance Criteria와 주요 산출물은 모든 소속 Sub-issue가 완료된 뒤 Parent를 종료하는 단계에서 종합적으로 검증합니다.
-- 다른 Owner 영역이나 공통 Contract에 영향을 주면 구현 전에 관련 Owner와 합의합니다.
-- Sub-issue 구현과 로컬 검증을 마친 뒤 Platform Repository PR을 `dev` 대상으로 생성합니다. Required CI는 PR 이후 Gate로 수행합니다.
-- 완료 가능한 Sub-issue 또는 Bug의 일반 PR은 기본 브랜치인 `dev`를 대상으로 하고, 모든 Acceptance Criteria를 충족한 경우 PR 설명에 `Closes #이슈번호`를 사용합니다. 일부 범위만 다루는 PR은 `Refs #이슈번호`를 사용하고 Issue를 열어 둡니다.
-- Review와 Merge는 사람이 수행합니다. Agent는 Issue close API를 호출하지 않으며, 사람이 `dev`에 Merge하면 GitHub가 `Closes`로 연결된 Issue를 닫습니다. 자동 종료를 확인한 뒤 다음 Sub-issue를 시작합니다.
-- Parent 통합 검증도 마지막 Native Sub-issue로 생성해 같은 구현·검증·Review·사람 Merge·GitHub native 자동 종료 절차를 적용합니다.
-- 통합 검증 Sub-issue를 포함한 모든 Native Sub-issue가 종료되어 progress가 100%가 되면, 사람이 Parent 전체 Acceptance Criteria와 주요 산출물을 종합 검증한 뒤 Parent Issue를 닫습니다.
+- **GitHub Issue / Project는 사용하지 않습니다.** 개발 기간이 짧아 Issue/Project 운영 비용보다 최소한의 공용 진행관리를 우선합니다.
+- **팀 공용 진행·마일스톤·의존성**은 Repository 루트 `PROGRESS.md`에서 관리합니다. Current / Completed / Next / Blocked / Milestone과 주요 Validation 상태만 짧게 유지합니다.
+- **개인/Agent 세부 작업**은 `.ai/task/taskN.md`로 관리합니다. 기능마다 새 파일을 만들어 누적하며 이전 파일을 덮어쓰지 않습니다. `.ai/`는 Git 추적 대상이 아니며 공통 형식은 `templates/`로 공유합니다.
+- 하나의 기능(하위 작업)은 새 Session에서 진행해 Context 오염을 막습니다. 각 `taskN.md`는 Goal / Scope / Acceptance Criteria / Out of Scope / 검증 결과를 담습니다.
+- 개별 기능의 구현과 PR은 해당 `taskN.md`의 Scope, Acceptance Criteria, Test / Validation을 완료 기준으로 사용합니다.
+- 본인 파트를 이어가다 과거 task를 다시 볼 때는 전체를 로드하지 않고 필요한 `taskN.md` 하나만 골라 읽습니다.
+- 기능 완료 시 핵심 결정·결과 한 줄을 `PROGRESS.md`의 Completed에 올려 과거 기록의 진입점을 남깁니다.
+- 아키텍처·계약에 지속 영향을 주는 결정은 `taskN.md`에만 두지 않고 `docs/decisions/` ADR로 옮깁니다. `.ai/`는 Git 추적 대상이 아니므로 task에만 남기면 머신을 바꿀 때 유실될 수 있습니다.
+- 다른 Owner 영역이나 공통 Contract에 영향을 주면 구현 전에 관련 Owner와 합의하고 `PROGRESS.md`에 의존성을 명시합니다.
+- 구현과 로컬 검증을 마친 뒤 Platform Repository PR을 `dev` 대상으로 생성합니다. Required CI는 PR 이후 Gate로 수행합니다.
+- Review와 Merge는 사람이 수행합니다. `dev` Merge 후 담당자가 `PROGRESS.md`의 Completed를 갱신하고 다음 기능을 새 Session에서 시작합니다.
 
 ### 역할과 작업 조정
 
-- A/B/C/D 영역 Owner는 공통 Issue Template에 따라 자신의 기술 범위와 최초·추가 Sub-issue를 정의하고 관리합니다.
-- Parent Owner는 Parent의 목표, Scope, 의존 관계와 최종 완료 여부를 관리합니다.
-- 각 Owner는 공유 Milestone과 Project에서 자기 Sub-issue의 Assignee, 상태와 직접적인 의존 관계를 갱신합니다. 이를 위해 모든 영역의 Issue 본문을 반복해서 읽는 별도 Milestone 관리 Agent를 두지 않습니다.
-- 구현 중 발견한 Sub-issue가 기존 Parent Scope 안에서 현재 목표를 막는다면 해당 Owner가 현재 Milestone에 배치할 수 있습니다. 선택 기능과 후속 개선은 Backlog로 보냅니다.
-- 사람이 공유 Project에서 전체 일정과 병목을 확인하고, Milestone 기간·전체 범위·Owner 간 우선순위·담당 재배치와 공통 Contract 변경을 종합 판단합니다.
-- 공통 Contract는 Producer와 Consumer가 함께 검토하며, 실제 담당자는 Issue Assignee와 Project에서 관리합니다.
-
-### Milestone과 Project
-
-- Milestone은 Sprint 또는 통합 결과물처럼 마감일이 있는 작업 묶음으로 사용합니다.
-- 같은 Sprint 또는 통합 결과물을 수행하는 A/B/C/D는 Owner별 Milestone을 따로 만들지 않고 하나의 공유 Milestone을 사용합니다.
-- Parent Issue와 PR에는 Milestone을 지정하지 않고, 실제 완료 가능한 Sub-issue와 Bug에 지정합니다.
-- 같은 작업을 Parent, Sub-issue, PR에 중복 배정하지 않으며 Milestone 진행률은 Sub-issue와 Bug의 종료 상태로 판단합니다.
-- 현재 목표를 막는 새 작업만 진행 중인 Milestone에 추가하고, 선택 기능과 후속 개선은 다음 Milestone 또는 Backlog로 이동합니다.
-- 실제 일정과 진행 상태는 Repository 문서가 아니라 GitHub Milestone과 Project를 정본으로 사용합니다.
-- 전체 일정은 공유 Project의 Owner, Status, Priority, Planned Day와 Blocked 상태로 확인하며, 각 Owner는 자기 항목만 갱신합니다.
-
-Project 상태는 다음 순서로 관리합니다.
-
-```text
-Proposed → Ready → In Progress → Review → Done
-```
-
-- `Proposed`: 새로 제안되어 범위와 일정이 아직 검토되지 않은 상태
-- `Ready`: Scope, Acceptance Criteria, Test / Validation, Owner와 의존 관계가 확인된 상태
-- `In Progress`: 구현 중인 상태
-- `Review`: PR 검토 중인 상태
-- `Done`: 필요한 검증과 `dev` Merge가 끝나고 Issue가 종료된 상태
-
-### Parent와 의존 관계
-
-- Sub-issue는 GitHub의 실제 Parent/Sub-issue 관계로 연결하며, Issue 본문의 Parent 번호만으로 연결됐다고 간주하지 않습니다.
-- 선행 작업이 필요한 경우 GitHub의 `Blocked by` / `Blocking` 관계와 Issue의 `Depends on` / `Blocks`를 일치시킵니다.
-- 공통 Contract, Repository Snapshot, Approval처럼 다른 영역을 막는 작업은 구현 시작 전에 의존 관계를 연결합니다.
-- 순환 의존 관계를 만들지 않으며, 구현자는 `Ready` 상태이고 선행 작업이 끝난 Issue부터 착수합니다.
+- A/B/C/D 영역 Owner는 자신의 기술 범위와 기능을 `.ai/task/`로 정의하고 관리합니다.
+- 각 Owner는 `PROGRESS.md`에서 자기 항목의 상태와 직접적인 의존 관계만 갱신합니다.
+- 사람이 `PROGRESS.md`에서 전체 일정과 병목을 확인하고, 전체 범위·Owner 간 우선순위·담당 재배치와 공통 Contract 변경을 종합 판단합니다.
+- 공통 Contract는 Producer와 Consumer가 함께 검토합니다.
+- 선행 작업이 필요한 경우 `PROGRESS.md`의 Blocked에 의존 대상과 사유를 적고, 순환 의존을 만들지 않으며 선행 작업이 끝난 기능부터 착수합니다.
 
 ## Branch Naming
 
-기본 형식은 `type/kebab-case`입니다.
+기본 형식은 `type/kebab-case`입니다. Issue를 사용하지 않으므로 branch 이름에 Issue 번호를 넣지 않고 기능을 설명하는 이름을 사용합니다.
 
 ```text
-feature/11-assessment-api
-fix/42-policy-profile-validation
+feature/assessment-api
+fix/policy-profile-validation
 docs/update-contracts
 chore/bootstrap-repository
 ```
 
-일반 branch는 `dev`에서 만들고 `dev`로 PR합니다. 안정화 통합 PR만 `dev`에서 `main`으로 보냅니다.
+일반 branch는 `dev`에서 만들고 `dev`로 PR합니다. `dev → main` 통합 PR은 주기적으로 만들지 않고, 모든 기능이 완료되어 최종 통합·E2E/Release 검증이 가능한 시점에 사람이 1회만 만듭니다.
 
 허용되는 Platform Repository PR 경로는 아래 두 가지뿐입니다.
 
@@ -126,17 +93,15 @@ Conventional Commits를 사용합니다.
 PR에는 다음을 포함합니다.
 
 - What과 Why
-- Related Issue (`Refs` 또는 적절한 `Closes`)
+- Scope (Included / Out of scope)
 - 주요 변경 내용과 영역
 - Validation과 Test 결과
-- Architecture / Contract 영향
+- Architecture / Contract 영향 (Producer / Consumer)
 - 갱신한 문서
 - Security / Secret 확인
 - 다른 Owner 확인 필요 여부
 
-목표 협업 정책상 Merge 조건은 해당 PR의 Required CI 통과와 다른 팀원 최소 1명 승인입니다. CI 실패 상태에서는 Merge하지 않고 Merge Commit만 사용합니다. 실제 강제 조건과의 차이는 아래 `GitHub Repository 보호 규칙`의 blocker를 따릅니다. Merge 후 더 이상 필요 없는 feature branch는 삭제할 수 있습니다.
-
-기본 브랜치인 `dev`를 대상으로 하는 완료 가능한 Sub-issue 또는 Bug PR은 Related Issue에 `Closes #번호`를 사용합니다. 모든 완료 조건을 충족하지 않은 부분 PR은 `Refs #번호`를 사용하고 Issue를 열어 둡니다. 사람이 PR을 Merge하면 GitHub가 closing keyword로 연결된 Issue를 자동 종료하며, Agent는 Issue close API를 호출하지 않습니다. Parent Issue는 PR의 closing keyword로 닫지 않고 모든 Sub-issue 종료 후 사람이 종합 검증해 닫습니다. 기본 브랜치가 변경되면 native 자동 종료 조건도 함께 재검토합니다.
+**GitHub Issue를 사용하지 않으므로 PR에 `Closes`/`Refs` 같은 Issue 연결 키워드를 쓰지 않습니다.** 목표 협업 정책상 Merge 조건은 해당 PR의 Required CI 통과와 다른 팀원 최소 1명 승인입니다. CI 실패 상태에서는 Merge하지 않고 Merge Commit만 사용합니다. 실제 강제 조건과의 차이는 아래 `GitHub Repository 보호 규칙`의 blocker를 따릅니다. Merge 후 더 이상 필요 없는 feature branch는 삭제할 수 있습니다. Merge 후 담당자가 `PROGRESS.md`의 Completed를 갱신합니다.
 
 ## GitHub Repository 보호 규칙
 
@@ -218,7 +183,7 @@ node --test tests/unit/test_policy_frontend.mjs
 - Naming 변경: `docs/NAMING.md`
 - 장기 기술 결정: `docs/decisions/` ADR
 
-상위 제품 결정이 바뀌면 Notion `최종 계획서`도 함께 갱신합니다. 확정되지 않은 설계를 구현 편의만으로 고정하지 않습니다.
+제품 방향·구현 세부 모두 Repository 문서(`docs/`)가 정본입니다. **Notion 최종 계획서를 정본으로 참조하거나 함께 갱신하는 규칙은 사용하지 않습니다.** 확정되지 않은 설계를 구현 편의만으로 고정하지 않습니다.
 
 ## AWS 공동 개발환경
 
@@ -235,12 +200,12 @@ node --test tests/unit/test_policy_frontend.mjs
 
 - `.env`와 실제 Credential 파일은 commit하지 않습니다.
 - `.env.example`에는 확정된 변수 이름과 비밀이 아닌 예시만 둡니다.
-- GitHub, AWS, Cognito, 외부 서비스 Token을 코드·문서·Issue·로그에 붙이지 않습니다.
+- GitHub, AWS, Cognito, 외부 서비스 Token을 코드·문서·로그에 붙이지 않습니다.
 - 의심되는 값이 노출되면 commit 기록을 정리하는 것만으로 끝내지 말고 즉시 폐기·재발급 절차를 따릅니다.
 
 ## AI Coding Agent와 Worktree
 
-AI가 생성한 변경에도 동일한 Issue, Branch, Commit, PR, Test, Review, CI 규칙을 적용합니다. 복잡한 변경은 Research → Plan → Implement → Test → Review를 권장합니다. Git Worktree는 여러 branch 또는 Agent 작업을 병렬로 진행할 때 선택적으로 사용하며 필수는 아닙니다.
+AI가 생성한 변경에도 동일한 Branch, Commit, PR, Test, Review, CI 규칙을 적용합니다. 하위 작업(기능)마다 새 Session에서 진행하고 현재 작업은 `.ai/task/taskN.md`로 정의합니다. 복잡한 변경은 Research → Plan → Implement → Test → Review를 권장합니다. Git Worktree는 여러 branch 또는 Agent 작업을 병렬로 진행할 때 선택적으로 사용하며 필수는 아닙니다.
 
 ## Definition of Done
 
@@ -253,4 +218,4 @@ AI가 생성한 변경에도 동일한 Issue, Branch, Commit, PR, Test, Review, 
 - 일반 작업은 `dev`에 Merge
 - Architecture/Workflow/Contract 변경 시 관련 문서 갱신
 
-문서 전용 작업과 E2E/배포가 필요한 작업의 추가 기준은 해당 Issue에서 명시합니다.
+문서 전용 작업과 E2E/배포가 필요한 작업의 추가 기준은 해당 `.ai/task/taskN.md`에서 명시합니다.

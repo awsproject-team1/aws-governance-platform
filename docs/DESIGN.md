@@ -271,10 +271,4 @@ Request → Job(DynamoDB) → Workflow
 - OIDC Subject/Environment 조건
 - 데이터별 보존기간과 SLO
 
-## 근거 문서
-
-- [Notion — 02. 서비스 아키텍처 · 배포 · Tool 구조](https://app.notion.com/p/3c66e3d0b32581c38a77f1e9d5346c22)
-- [Notion — 03. workflow/contract](https://app.notion.com/p/3c56e3d0b32580d38743ed1e6fd6b02f)
-- [Notion — 04. Governance Rule / Policy / Assessment / Scoring](https://app.notion.com/p/3c66e3d0b3258045bc30fcf379a5be02)
-- [Notion — 05. Remediation · GitHub · CI/CD · 보안](https://app.notion.com/p/3c66e3d0b32581229260d95b7a449863)
-- [Notion — 06. 운영 · Observability · 검증 · 테스트](https://app.notion.com/p/3c66e3d0b3258114a489f7f87adec967)
+참고: 이 문서가 Architecture 정본이다. 과거 Notion 설계 문서는 정본·참조 경로로 사용하지 않는다.
