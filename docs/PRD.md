@@ -172,8 +172,4 @@ Public Access Block이 없거나 불완전한 S3 Terraform
 - 결정론적 Check Registry로 분리할 추가 Rule 범위
 - 구체 SLO와 데이터 보존기간
 
-## 근거 문서
-
-- [Notion — 최종 계획서](https://app.notion.com/p/3c66e3d0b32581048803f9c4ac214a10)
-- [Notion — 01. 프로젝트 개요 · 범위 · 사용자 구조](https://app.notion.com/p/3c66e3d0b3258108807fd0feba897264)
-- [Notion — 07. MVP · 구현 우선순위 · 미결정사항](https://app.notion.com/p/3c66e3d0b3258140a9f3c1b85045f60e)
+참고: 상위 제품 방향과 구현 세부의 정본은 이 저장소 `docs/` 문서다. 과거 Notion 계획서는 정본·참조 경로로 사용하지 않는다.

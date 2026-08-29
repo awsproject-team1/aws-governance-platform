@@ -8,8 +8,8 @@
 2. 사용자 요청을 분류하고 아래 표에서 **첫 정본 하나**를 선택한다.
 3. `rg`와 `rg --files`로 영향받는 코드·Fixture·Test를 좁혀 읽는다.
 4. 첫 정본과 관련 코드만으로 판단할 수 없을 때만 두 번째 문서를 읽는다.
-5. 같은 Codex 실행에서 이미 읽은 안정적인 문서는 실제로 변경됐거나 최신 재확인이 필요하지 않으면 다시 읽지 않는다. `git status`, `git diff`, 테스트 결과처럼 변하는 정보는 필요할 때 재확인한다.
-6. 이미 생성된 Sub-issue를 착수할 때는 Parent Issue의 Goal, Scope(제외 범위 포함), 직접 의존 관계만 한 번 확인한다. 구현 경계와 완료 기준은 Sub-issue의 Scope, Acceptance Criteria, Test / Validation을 사용하고, Parent 전체 본문은 범위 판단에 정보가 부족하거나 변경 알림을 받았을 때, 또는 모든 Sub-issue 완료 후 Parent를 종료할 때만 다시 확인한다.
+5. 같은 실행(Session)에서 **한번 읽은 안정적인 문서는 다시 읽지 않는다.** 실제로 변경됐거나 최신 재확인이 필요할 때만 다시 읽는다. `git status`, `git diff`, 테스트 결과처럼 변하는 정보는 필요할 때 재확인한다.
+6. 하위 작업(기능)은 각각 새 Session에서 진행해 Context 오염을 막는다. 현재 작업의 Goal, Scope(제외 범위 포함), Acceptance Criteria는 `.ai/task/taskN.md`에서 확인하고, 팀 공용 진행·의존 관계는 `PROGRESS.md`에서 확인한다.
 
 Repository 전체 문서나 디렉터리를 기본 Context로 적재하지 않는다.
 
@@ -17,17 +17,18 @@ Repository 전체 문서나 디렉터리를 기본 Context로 적재하지 않�
 
 | 작업 | 먼저 읽을 정본 | 관련 코드 | 부족할 때만 추가 |
 | --- | --- | --- | --- |
-| 제품 범위·MVP·상위 결정 | `docs/PRD.md` | 영향 영역 | Notion `최종 계획서`와 하위 문서 |
+| 제품 범위·MVP·상위 결정 | `docs/PRD.md` | 영향 영역 | `docs/DESIGN.md`, `docs/decisions/` |
 | Architecture·AWS 서비스·보안 경계·책임 | `docs/DESIGN.md`의 관련 절 | `apps/`, `agent/`, `tools/`, `infrastructure/` | 장기 결정이면 `docs/decisions/` |
 | HTTP API·Request·Response | `docs/API.md`의 관련 Endpoint | `apps/backend/`, `apps/frontend/src/api/` | Domain 필드가 필요할 때 `docs/CONTRACTS.md` |
 | Data/Domain Contract·Schema·상태 | `packages/contracts/`에 실행 가능한 Schema 코드가 있으면 코드, 없으면 `docs/CONTRACTS.md` | Producer, Consumer, `fixtures/`, contract test | API/Architecture 영향이 있을 때만 `docs/API.md` 또는 `docs/DESIGN.md` |
 | Rule·Policy·Profile·Scoring | `docs/CONTRACTS.md`의 관련 Domain | `packages/governance/`, `tools/policy-knowledge/`, `tools/external-evidence/` | 책임 경계가 필요할 때 `docs/DESIGN.md` |
 | Agent Graph·Assessment·Tool | `docs/DESIGN.md`의 관련 절 | `agent/`, `tools/` | 교환 데이터가 필요할 때 `docs/CONTRACTS.md` |
 | Terraform·IAM·Deployment | `docs/DESIGN.md`의 Remediation/IAM/Deployment 절 | `infrastructure/`, `ci/`, `tools/aws-resource/`, `tools/github/` | 명명은 `docs/NAMING.md`, 협업 CI는 `CONTRIBUTING.md` |
-| Git·Issue·Branch·PR·GitHub Actions | `CONTRIBUTING.md`의 관련 절 | `.github/`, `ci/` | 이름을 바꿀 때만 `docs/NAMING.md` |
+| Git·Branch·PR·GitHub Actions | `CONTRIBUTING.md`의 관련 절 | `.github/`, `ci/` | 이름을 바꿀 때만 `docs/NAMING.md` |
+| 팀 진행·작업 상태 | `PROGRESS.md`(팀 공용), `.ai/task/taskN.md`(개인) | 영향 영역 | 규칙은 `CONTRIBUTING.md` |
 | Naming | `docs/NAMING.md` | 영향 파일 | Contract 영향이 있을 때만 `docs/CONTRACTS.md` |
 
-상위 제품 방향은 Notion, 구현 세부사항은 Repository 문서, 실행 가능한 Contract는 `packages/contracts/`가 정본이다. 실제 작업 상태는 GitHub Issue/Projects, 고객 Workload Terraform은 고객 Repository가 정본이다. 확정되지 않은 내용은 추측하지 않고 `TODO` 또는 `Open Decision`으로 남긴다. deprecated 문서가 생기면 정본으로 사용하지 않는다.
+제품 방향·구현 세부사항 모두 Repository 문서(`docs/`)가 정본이고, 실행 가능한 Contract는 `packages/contracts/`가 정본이다. **상위 제품 방향을 위해 Notion 문서를 정본으로 참조하지 않는다.** 팀 공용 작업 상태는 `PROGRESS.md`, 개인/Agent 작업 상태는 `.ai/task/taskN.md`, 고객 Workload Terraform은 고객 Repository가 정본이다. 확정되지 않은 내용은 추측하지 않고 `TODO` 또는 `Open Decision`으로 남긴다. deprecated 문서가 생기면 정본으로 사용하지 않는다.
 
 ## Repository Map
 
@@ -38,20 +39,21 @@ Repository 전체 문서나 디렉터리를 기본 Context로 적재하지 않�
 - 공유: `packages/contracts/`, `packages/common/`, `fixtures/`, `tests/`, `docs/`
 - `fixtures/`, `tests/`: 고정 입력과 Unit/Contract/Integration/E2E/Security 검증
 - `docs/`: 제품·설계·Interface·Naming 정본과 ADR
-- `.github/`: Issue/PR template과 GitHub Actions
+- `.github/`: PR template과 GitHub Actions (CI/PR Gate). GitHub Issue는 사용하지 않는다.
 
 세부 책임과 금지 경계는 `docs/DESIGN.md`를 따른다. 고객 Workload Terraform을 `infrastructure/`에 넣지 않는다.
 
-## 역할별 GitHub 작업 범위
+## 역할별 작업 범위
 
-- GitHub 작업을 시작할 때 요청된 Parent Issue, Issue Assignee, Related Domain과 영향받는 경로를 기준으로 A/B/C/D 중 현재 역할을 먼저 확인한다.
-- Issue 계획을 명시적으로 요청받은 경우 해당 역할의 Parent Issue와 직접 연결된 의존 관계만 확인하고, 그 Parent 아래의 Sub-issue만 생성·관리한다. 다른 역할의 Parent와 전체 Milestone 항목을 기본 Context로 읽지 않는다.
-- 이미 생성된 Sub-issue를 구현할 때는 Issue Template을 다시 읽지 않고, 선택한 Sub-issue의 Scope, Acceptance Criteria, Test / Validation과 직접 연결된 의존 Issue만 확인한다.
-- Sub-issue 착수 시 Parent의 Goal, Scope(제외 범위 포함), 직접 의존 관계를 한 번 확인한다. 구현 중에는 Sub-issue만으로 범위를 판단할 수 없거나 Parent 변경 알림을 받았을 때, 또는 모든 Sub-issue 완료 후 Parent를 종료할 때만 Parent 전체를 다시 확인한다.
-- A/B/C/D는 같은 공유 Milestone과 Project 안에서 각자 담당 Sub-issue의 Assignee와 상태를 갱신한다. Milestone 기간·전체 범위·Owner 간 우선순위는 임의로 변경하지 않고 사람이 종합 판단한다.
-- 공통 Contract 또는 다른 Owner 영역에 영향이 있을 때만 관련 Parent·Issue와 정본을 추가로 확인하고 해당 Owner와 합의한다.
-- 모든 완료 조건을 충족한 Sub-issue 또는 Bug의 `dev` PR에는 `Closes #이슈번호`를 사용하고, 일부 범위만 다루면 `Refs #이슈번호`를 사용한다. Review와 Merge는 사람이 수행하고 GitHub가 연결된 Issue를 자동 종료한다. Agent는 Issue close API를 직접 호출하지 않으며 Parent Issue를 PR closing keyword로 닫지 않는다.
-- 이 절은 Context와 책임 범위를 제한하는 규칙이다. Issue 생성·수정 등 GitHub 원격 변경은 사용자의 명시적 요청이 있을 때만 수행한다.
+- **GitHub Issue / Project는 사용하지 않는다.** 팀 공용 진행·마일스톤·의존성은 `PROGRESS.md`, 개인/Agent 세부 작업은 `.ai/task/taskN.md`로 관리한다.
+- 작업을 시작할 때 영향받는 경로와 Related Domain을 기준으로 A/B/C/D 중 현재 역할을 먼저 확인한다.
+- 현재 기능은 `.ai/task/taskN.md`의 Goal, Scope(제외 범위 포함), Acceptance Criteria, Test / Validation을 완료 기준으로 사용한다. 하위 작업(기능)마다 새 Session에서 진행하고, 각 기능은 `taskN.md`를 새로 만들어 누적한다(이전 파일을 덮어쓰지 않는다).
+- 과거 task를 다시 볼 때는 전체를 로드하지 않고 필요한 `taskN.md` 하나만 골라 읽는다(재독 금지 원칙과 동일).
+- 기능 완료 시 핵심 결정·결과 한 줄을 `PROGRESS.md`의 Completed에 올린다. 아키텍처·계약에 지속 영향을 주는 결정은 `taskN.md`에만 두지 않고 `docs/decisions/` ADR로 옮긴다(`.ai/`는 Git 제외라 task에만 두면 유실될 수 있다).
+- 팀 공유가 필요한 진행·의존 관계·Blocked만 `PROGRESS.md`에 갱신한다. 다른 역할 전체 작업을 기본 Context로 읽지 않는다.
+- 공통 Contract 또는 다른 Owner 영역에 영향이 있을 때만 관련 정본을 추가로 확인하고 해당 Owner와 합의하며 `PROGRESS.md`에 의존성을 명시한다.
+- `dev` 대상 PR에는 Issue 연결 키워드(`Closes`/`Refs`)를 사용하지 않는다. Review와 Merge는 사람이 수행한다.
+- 이 절은 Context와 책임 범위를 제한하는 규칙이다. commit, push, PR 생성 등 GitHub 원격 변경은 사용자의 명시적 요청이 있을 때만 수행한다.
 
 ## Skills
 
@@ -68,6 +70,7 @@ Project Context 전용 Skill은 두지 않는다. 이 파일의 Router를 사용
 - LLM 출력은 Schema, 허용 ID/Enum, 권한, CI, Plan, Human Approval로 검증한다.
 - Agent와 AWS Resource Tool은 Customer Workload를 변경하지 않는다. Terraform Apply는 승인 후 GitHub Actions만 수행한다.
 - Secret, Credential, Access Key, Session Token을 코드·문서·Fixture·로그에 넣지 않는다.
+- 문서와 task(`docs/`, ADR, `.ai/task/`, PROGRESS 등)의 **서술은 한국어로 작성한다.** 단 식별자·파일 경로·코드 심볼·기술 용어(예: `apps.backend`, `job_id`, API Gateway, Lambda)와 ADR `Status` 값(`Accepted`/`Proposed`/`Superseded`), 링크·URL은 원문을 유지한다.
 - `main`과 `dev`에서 직접 구현하거나 Push하지 않는다. 허용 PR 경로와 Review 조건은 `CONTRIBUTING.md`를 따른다.
 - GitHub의 admin/bypass 권한으로 Branch/Ruleset/Required Check/Review 조건을 우회하지 않는다. 보호 설정을 약화·삭제하거나 Required Check 이름을 바꾸지 않는다. PR의 head/base 조합을 검사하는 Required Check 이름은 `validate-pr-source`다.
 - 사용자 명시 요청 없이 commit, push, PR 생성, merge, remote 변경을 수행하지 않는다.

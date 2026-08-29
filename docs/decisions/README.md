@@ -49,4 +49,4 @@ ADR에는 최소한 다음을 기록한다.
 - Notion `Issues & Decisions`: 논의 과정, 배경, 회의, 상위 의사결정과 프로젝트 맥락
 - Repository ADR: 구현에 직접 영향을 주는 확정 기술 결정의 버전 관리 정본
 
-논의는 Notion에서 시작할 수 있지만 구현에 지속적인 영향을 주는 확정 결정은 ADR로 남긴다. 상위 제품 결정까지 바뀌면 Notion `최종 계획서`와 관련 Repository 문서를 함께 갱신한다.
+논의는 Notion에서 시작할 수 있지만 구현에 지속적인 영향을 주는 확정 결정은 ADR로 남긴다. 상위 제품 결정까지 바뀌면 정본인 `docs/PRD.md`, `docs/DESIGN.md`와 관련 Repository 문서를 갱신한다. Notion 최종 계획서를 정본으로 함께 갱신하지 않는다.

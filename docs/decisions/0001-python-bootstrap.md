@@ -8,33 +8,33 @@
 
 ## Context / Problem
 
-The repository defines Python linting and testing requirements but does not yet define a Python version, dependency installation method, test runner, executable validation commands, or CI workflow. Product APIs, domain contracts, frontend tooling, and AWS resources are still open decisions and must not be inferred from a tooling bootstrap.
+저장소는 Python linting·testing 요구사항은 정의했지만 Python 버전, 의존성 설치 방법, test runner, 실행 가능한 검증 명령, CI workflow는 아직 정의하지 않았다. Product API, domain contract, frontend tooling, AWS resource는 여전히 Open Decision이며 tooling bootstrap에서 추론해서는 안 된다.
 
 ## Decision
 
-- Use Python 3.14 for the initial Python toolchain. It matches the approved local environment and is an AWS Lambda supported runtime.
-- Use standard `pip` with exact direct dependency pins in `requirements-dev.txt` for the initial bootstrap.
-- Use the standard-library `unittest` runner until a test framework requiring third-party dependencies is justified.
-- Use Ruff for Python linting and formatting, configured in the root `pyproject.toml`.
-- Run Python lint, format checking, and unit tests in a path-filtered GitHub Actions workflow.
-- Run Gitleaks CLI 8.30.1 for every pull request targeting `dev` or `main`; verify the downloaded Linux archive against its published SHA-256 checksum before execution.
-- On pull requests, scan every commit introduced by the exact base-to-head range so unrelated remote branches cannot contaminate the result. Keep `workflow_dispatch` as an explicit full-history audit.
-- Pin Python packages to exact versions, GitHub Actions to immutable commit SHAs, and downloaded CI tools by version and checksum.
+- 초기 Python toolchain에는 Python 3.14를 사용한다. 승인된 로컬 환경과 일치하고 AWS Lambda 지원 runtime이다.
+- 초기 bootstrap에는 표준 `pip`와 `requirements-dev.txt`의 정확한 직접 의존성 pin을 사용한다.
+- third-party 의존성이 필요한 test framework가 정당화되기 전까지 표준 라이브러리 `unittest` runner를 사용한다.
+- Python linting·formatting에는 Ruff를 사용하고 root `pyproject.toml`에 구성한다.
+- Python lint, format 검사, unit test는 path-filter된 GitHub Actions workflow에서 실행한다.
+- `dev` 또는 `main`을 대상으로 하는 모든 pull request에 Gitleaks CLI 8.30.1을 실행한다. 다운로드한 Linux archive는 실행 전에 게시된 SHA-256 checksum으로 검증한다.
+- pull request에서는 정확한 base-to-head 범위가 도입한 모든 commit을 scan해 무관한 remote branch가 결과를 오염시키지 못하게 한다. `workflow_dispatch`는 명시적 full-history audit으로 유지한다.
+- Python package는 정확한 버전으로, GitHub Actions는 immutable commit SHA로, 다운로드하는 CI 도구는 버전과 checksum으로 pin한다.
 
 ## Consequences
 
-- Local development and CI require Python 3.14.
-- The first validation path has one external Python development dependency: Ruff.
-- This decision establishes repository tooling only. It does not select a backend framework, domain schema library, frontend package manager, LangGraph runtime, AWS resource, or public API endpoint.
-- Application dependencies and a transitive lock strategy must be reconsidered when the first executable application slice is approved.
-- The secret-scan workflow downloads the pinned Gitleaks CLI release from GitHub and rejects the archive if its SHA-256 checksum differs from the accepted value.
+- 로컬 개발과 CI는 Python 3.14를 요구한다.
+- 첫 검증 경로의 외부 Python 개발 의존성은 Ruff 하나다.
+- 이 결정은 저장소 tooling만 정한다. backend framework, domain schema 라이브러리, frontend package manager, LangGraph runtime, AWS resource, public API endpoint를 선택하지 않는다.
+- Application 의존성과 transitive lock 전략은 첫 실행 가능한 application slice가 승인될 때 재검토한다.
+- secret-scan workflow는 pin된 Gitleaks CLI release를 GitHub에서 다운로드하고 SHA-256 checksum이 허용값과 다르면 archive를 거부한다.
 
 ## Alternatives considered
 
-- **Python 3.13:** Supported by AWS Lambda, but it would differ from the already approved local Python 3.14 environment.
-- **uv, Poetry, or pip-tools:** Deferred because the repository does not yet need a multi-package lock strategy.
-- **pytest:** Deferred because the initial import smoke test does not require a third-party test framework.
-- **Frontend and Python bootstrap together:** Rejected to avoid fixing unrelated Node, bundler, and frontend test decisions in the same change.
+- **Python 3.13:** AWS Lambda가 지원하지만 이미 승인된 로컬 Python 3.14 환경과 달라진다.
+- **uv, Poetry, pip-tools:** 저장소가 아직 multi-package lock 전략을 필요로 하지 않으므로 보류.
+- **pytest:** 초기 import smoke test에 third-party test framework가 필요 없으므로 보류.
+- **Frontend와 Python bootstrap을 함께:** 같은 변경에서 무관한 Node, bundler, frontend test 결정을 고정하는 것을 피하려 기각.
 
 ## References
 

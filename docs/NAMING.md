@@ -206,8 +206,4 @@ API JSON 예시는 `snake_case`를 사용하고 있으나 모든 외부/내부 S
 - API Field Naming 전역 규칙
 - GitHub Workflow/Environment Naming
 
-## 근거 문서
-
-- [Notion — Collaboration](https://app.notion.com/p/14d6ab0f231144c391fc52bd7e211ca4)
-- [Notion — 04. Governance Rule / Policy / Assessment / Scoring](https://app.notion.com/p/3c66e3d0b3258045bc30fcf379a5be02)
-- [Notion — 05. Remediation · GitHub · CI/CD · 보안](https://app.notion.com/p/3c66e3d0b32581229260d95b7a449863)
+참고: Naming 정본은 이 문서다. 과거 Notion 문서는 정본·참조 경로로 사용하지 않는다.
