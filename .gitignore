@@ -42,7 +42,7 @@ Thumbs.db
 tmp/
 *.log
 
-# Personal Coding Agent / Session state (team form shared via templates/)
+# Personal Coding Agent / Session state (team-shared state belongs in GitHub Issue/Project, PR, ADR, and tracked docs)
 .ai/
 
 # Keep Terraform dependency lock files tracked:

@@ -1,37 +1,48 @@
 name: Bug Report
-description: 재현 가능한 결함을 보고합니다.
+description: 재현 가능한 결함과 회귀 방지 작업을 기록합니다.
 title: "[Bug] "
 labels: []
 body:
+  - type: markdown
+    attributes:
+      value: "이 Form은 `docs/COLLABORATION.md`의 Bug Issue 생명주기를 따릅니다. 기능 Parent에 속하는 결함은 Native Sub-issue로 연결하고, 독립 운영 결함은 별도 Milestone으로 관리할 수 있습니다. Secret, Credential, Access Key, Session Token은 Issue에 기록하지 않습니다."
+  - type: input
+    id: owner
+    attributes:
+      label: Execution Owner
+      description: 재현, 수정, 회귀 검증, handoff를 책임질 사람 또는 GitHub Team을 적습니다.
+    validations:
+      required: true
   - type: input
     id: related
     attributes:
-      label: 관련 Parent / Issue / PR
+      label: Related Parent / Issue / PR
       placeholder: "Parent # / Issue # / PR #"
+      description: 해당 시 Parent의 Add sub-issue로 Native 관계도 연결합니다.
   - type: textarea
     id: symptom
     attributes:
-      label: 현상
-      description: 발생한 문제를 설명합니다.
+      label: Symptom
+      description: 발생한 문제와 사용자/운영 영향을 설명합니다.
     validations:
       required: true
   - type: textarea
     id: reproduce
     attributes:
-      label: 재현 방법
-      description: 순서와 필요한 입력/환경을 작성합니다.
+      label: Reproduction
+      description: 재현 순서, 필요한 입력/환경, 예상 빈도를 작성합니다.
     validations:
       required: true
   - type: textarea
     id: expected
     attributes:
-      label: 기대 결과
+      label: Expected Result
     validations:
       required: true
   - type: textarea
     id: actual
     attributes:
-      label: 실제 결과
+      label: Actual Result
       description: 오류 메시지에 Secret/민감정보를 포함하지 마세요.
     validations:
       required: true
@@ -48,23 +59,40 @@ body:
         - Shared Contract / Integration / Docs
     validations:
       required: true
+  - type: dropdown
+    id: dependency_status
+    attributes:
+      label: Dependency Status
+      description: 현재 상태를 선택합니다. Blocked/Mockable/Integrated의 정의는 `docs/COLLABORATION.md`를 따릅니다.
+      options:
+        - None
+        - Blocked
+        - Mockable
+        - Integrated
+    validations:
+      required: true
   - type: textarea
     id: impact
     attributes:
-      label: 영향 범위
-      description: 사용자, Module, Contract, 다른 Owner 영향을 작성합니다.
+      label: Contract / Other Owner Impact
+      description: 영향받는 사용자, Module, Contract Owner, Producer/Consumer, 필요한 Owner Review를 작성합니다.
   - type: textarea
     id: dependencies
     attributes:
-      label: Dependencies
-      description: Depends on / Blocks를 작성합니다.
+      label: Dependencies / Blocks
+      description: Depends on / Blocks, 관련 Issue, Owner, 해소 조건과 Mock/실제 통합 조건을 작성합니다.
+  - type: textarea
+    id: open_decision
+    attributes:
+      label: Open Decision (해당 시)
+      description: Decision, Owner, Needed by, Blocks, Options, Final record 형식으로 작성합니다. 장기 영향 결정은 ADR도 연결합니다.
   - type: textarea
     id: done
     attributes:
-      label: Acceptance Criteria
-      description: 수정, Regression Test, dev 재현 확인 조건을 작성합니다.
+      label: Bug Done Criteria / Validation
+      description: 수정, Regression Test, 적용 CI, `dev` 재현 방지 확인, 필요한 통합 검증을 체크리스트로 작성합니다.
     validations:
       required: true
   - type: markdown
     attributes:
-      value: "현재 목표를 막는 Bug는 해당 Milestone과 Project에 배치하고, 선행 작업이 있으면 Blocked by/Blocking 관계를 설정합니다."
+      value: "이 PR merge로 Bug Done Criteria를 모두 충족하면 `Closes #이슈번호`를 사용합니다. 조사·부분 수정·선행 기반 작업은 `Refs #이슈번호`를 사용해 Issue를 열어 둡니다. 긴급 수정·예외는 중앙 협업 문서의 절차에 따라 Issue와 PR에 사유·승인자·후속 검증을 기록합니다."

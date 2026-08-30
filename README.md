@@ -70,7 +70,7 @@ Tool, AWS Resource와 Infrastructure wiring은 아직 없습니다. `_bootstrap_
 1. [제품 요구사항](docs/PRD.md)과 [기술 설계](docs/DESIGN.md)를 읽습니다.
 2. [Contract](docs/CONTRACTS.md), [API](docs/API.md), [Naming](docs/NAMING.md)을 확인합니다.
 3. 사람 개발자는 [CONTRIBUTING.md](CONTRIBUTING.md), Coding Agent는 [AGENTS.md](AGENTS.md)를 따릅니다.
-4. GitHub Issue는 사용하지 않습니다. 현재 기능을 `.ai/task/taskN.md`로 정의하고 `dev`에서 short-lived feature branch를 생성해 작업하며, 팀 공용 진행은 `PROGRESS.md`로 관리합니다.
+4. 협업 운영 규칙은 [docs/COLLABORATION.md](docs/COLLABORATION.md)를 따릅니다. GitHub Parent Issue / Sub-issue / Bug Issue로 실행 작업을 관리하고, 일반 작업은 `dev` 대상 short-lived branch PR로 진행합니다.
 
 Governance Domain의 문서 수집 경계와 Runtime 의존성 결정은 [ADR 0007](docs/decisions/0007-governance-document-ingestion-boundary.md)를 확인합니다.
 

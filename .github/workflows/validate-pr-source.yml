@@ -1,4 +1,4 @@
-# docs/NAMING.md가 고정한 Required Check다.
+# docs/COLLABORATION.md가 정의한 안정적인 PR source validation check다.
 # Ruleset에 등록되는 check 이름은 아래 job name `validate-pr-source`와 정확히 같아야 한다.
 # 이름을 바꾸면 main Ruleset의 Required Check가 영원히 pending 상태가 되어 Merge가 막힌다.
 name: PR Source Validation
@@ -40,7 +40,7 @@ jobs:
           # CONTRIBUTING.md가 허용한 경로는 두 가지뿐이다.
           #   short-lived 작업 branch -> dev
           #   같은 Repository의 dev   -> main
-          allowed_prefixes='^(feature|fix|docs|refactor|test|chore)/[A-Za-z0-9._/-]+$'
+          allowed_prefixes='^(feature|fix|docs|refactor|test|chore)/[0-9]+-[a-z0-9]+(-[a-z0-9]+)*$'
 
           case "$BASE_REF" in
             main)
@@ -61,8 +61,7 @@ jobs:
                 exit 1
               fi
               if ! printf '%s' "$HEAD_REF" | grep -Eq "$allowed_prefixes"; then
-                echo "::error::dev 대상 PR의 head는 feature/, fix/, docs/, refactor/, test/, chore/ \
-          중 하나로 시작해야 합니다. 현재: '$HEAD_REF' (docs/NAMING.md)."
+                echo "::error::dev 대상 PR의 head는 feature/, fix/, docs/, refactor/, test/, chore/ 중 하나와 Issue 번호를 포함한 type/<issue-number>-kebab-case 형식이어야 합니다. 현재: '$HEAD_REF' (docs/NAMING.md)."
                 exit 1
               fi
               echo "OK: '$HEAD_REF' -> dev 일반 작업 PR"
