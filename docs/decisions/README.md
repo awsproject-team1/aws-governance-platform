@@ -41,7 +41,7 @@ ADR에는 최소한 다음을 기록한다.
 - Decision
 - Consequences
 - Alternatives considered
-- 관련 Issue/PR/Notion 결정
+- 관련 GitHub Issue/PR 및 필요한 Notion 논의 링크 (Notion은 배경 기록이며 구현 정본은 아님)
 - 대체하거나 대체되는 ADR
 
 ## Notion과 Repository ADR의 차이

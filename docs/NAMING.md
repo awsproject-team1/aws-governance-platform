@@ -27,7 +27,7 @@ customer-demo-iac
 형식:
 
 ```text
-type/kebab-case
+type/<issue-number>-kebab-case
 ```
 
 예:
@@ -35,8 +35,8 @@ type/kebab-case
 ```text
 feature/11-assessment-api
 fix/42-policy-profile-validation
-docs/update-contracts
-chore/bootstrap-repository
+docs/53-update-contracts
+chore/54-bootstrap-repository
 ```
 
 Platform Repository의 branch와 PR 경로는 다음과 같이 고정한다.
@@ -190,7 +190,7 @@ API JSON 예시는 `snake_case`를 사용하고 있으나 모든 외부/내부 S
 ## GitHub 관련 Naming
 
 - Platform Repository와 Customer IaC Repository는 별도 Naming과 Lifecycle을 가진다.
-- 일반 개발 branch는 `type/kebab-case`를 따른다.
+- 일반 개발 branch는 `type/<issue-number>-kebab-case`를 따른다.
 - Platform Repository의 일반 PR base는 `dev`이며 `main` 대상 PR의 유일한 허용 head는 같은 Repository의 `dev`다.
 - Platform Repository의 source 검증 Required Check는 `validate-pr-source`다.
 - Customer Remediation branch는 현재 설계 예시 `feature/governance-remediation-<id>`를 사용한다.
