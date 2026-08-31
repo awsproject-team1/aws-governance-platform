@@ -271,6 +271,52 @@ Rule Candidate의 Structured Output은 `resource_type`, `control_key`, `evaluati
 - Validation: 승인 Repository와 Commit 존재·권한을 검증한다. Terraform 원문은 S3 Artifact, 메타데이터는 Application Data Store에 둔다.
 - Versioning: Commit SHA가 Snapshot identity의 핵심이며 Schema version은 Open Decision이다.
 
+실행 정본은 `packages/contracts/iac_snapshots.py`의 `IaCSnapshot`이다. 현재 고정된 검증은 다음과 같다.
+
+- `commit_sha`는 40자 소문자 16진수다.
+- `files[]`는 Terraform 원문이 아닌 경로 목록이며 중복 없이 정렬된 상태로 재현성을 보장한다.
+- Terraform 원문은 `files[]`에 담지 않고 `snapshot_ref`가 가리키는 Artifact에만 보존한다.
+- `files[]`의 각 경로는 Repository 기준 상대경로이며 절대경로, drive letter, backslash, NUL, `.`/`..`/빈 세그먼트, 앞뒤 공백을 거부한다. Consumer가 경로를 로컬 작업 디렉터리에 결합하므로 계약 단계에서 work tree 이탈을 차단한다.
+- `snapshot_ref`는 Storage 위치를 노출하지 않는 opaque token이며 letters, digits, `.`, `_`, `:`, `-`만 허용하고 255자를 넘지 않는다. 이 형식은 `apps/backend/repositories/ports.py`의 `ArtifactReference`와 `packages/governance/canonical.py`의 `semantic_hash()`가 쓰는 `sha256:<hex>` 관례를 그대로 수용한다.
+
+`snapshot_ref`의 구체 Artifact Key 형식, Bucket 노출 방식, 기준 branch/base ref 필드는 여전히 Open Decision이다. Tool 실행 오류는 `tools/github/errors.py`의 `GitHubToolError` 계층으로만 표현하며 Governance `FAIL`로 변환하지 않는다.
+
+고객 Repository는 신뢰 경계 밖 입력이므로 Capture는 명시적 상한 안에서만 수행한다. 상한을 넘으면 프로세스 종료가 아니라 `SnapshotTooLargeError`로 표현한다.
+
+- 파일 수: `MAX_TERRAFORM_FILES`
+- 파일당 byte: `MAX_TERRAFORM_FILE_BYTES`
+- Payload 전체 byte: `MAX_SNAPSHOT_PAYLOAD_BYTES`
+
+상한은 `tools/github/snapshot.py`에 상수로 두며 실제 Repository 규모를 측정한 뒤 조정하는 Open Decision이다.
+
+### IaCSnapshotSources
+
+- Purpose: 하나의 IaCSnapshot에 대응하는 Terraform 원문 Artifact Payload
+- Producer: GitHub Repository Tool
+- Consumer: Terraform Analyzer, Assessment, Remediation
+- Required: `repository_id`, `commit_sha`, `sources`
+- 실행 정본: `packages/contracts/iac_snapshots.py`의 `IaCSnapshotSources`와 `decode_iac_snapshot_sources`
+
+`IaCSnapshot`은 메타데이터만 전달하므로 Consumer는 `snapshot_ref`로 Artifact를 읽어 원문을 얻는다. 읽기 경로는 다음과 같다.
+
+- Read Port: `tools/github/ports.py`의 `SnapshotArtifactReader.get_snapshot(snapshot_ref)`
+- Read 함수: `tools/github/snapshot.py`의 `read_iac_snapshot_sources(snapshot, reader)`
+
+`SnapshotArtifactReader`는 읽기 연산만 노출하며 Snapshot을 교체할 수 없다. 쓰기는 Producer만 사용하는 `SnapshotArtifactStore.put_snapshot`으로 분리한다.
+
+Payload 검증은 다음과 같이 고정한다.
+
+- Payload는 `repository_id`, `commit_sha`, `sources` 세 필드만 갖는 UTF-8 JSON이다.
+- 동일 입력은 동일 byte를 만든다. 인코딩은 `sort_keys=True`와 `separators=(",", ":")`를 사용해 `packages/governance/canonical.py`의 `canonical_json()`과 같은 형태를 유지한다.
+- Payload에 JSON 배열을 넣지 않는다. `sort_keys`는 object key만 정렬하므로 배열이 생기면 같은 내용이 순서에 따라 다른 byte가 된다. 배열이 필요하면 명시적 정렬 규칙을 먼저 정한다.
+- `sources`는 경로에서 원문 문자열로 가는 Read-Only Mapping이다. 경로 검증은 `IaCSnapshot.files[]`와 동일하므로 저장된 Payload가 work tree를 이탈하는 경로를 다시 들여올 수 없다.
+- 빈 문자열 원문은 유효하다. 빈 Terraform 파일이 실제로 존재한다.
+- 읽은 Payload의 `repository_id`, `commit_sha`, 정렬된 경로 집합이 `IaCSnapshot`과 일치해야 한다. 불일치는 `SnapshotMismatchError`이며 Governance 판정이 아니다.
+- 저장된 Payload를 읽을 수 없으면 `SnapshotNotFoundError`이며 Governance 판정이 아니다.
+- 저장된 Payload가 `MAX_SNAPSHOT_PAYLOAD_BYTES`를 넘으면 Decode 전에 `SnapshotTooLargeError`로 차단한다.
+
+Canonical JSON 헬퍼가 `packages/contracts/`와 `packages/governance/` 두 곳에 존재한다. `packages/contracts/`가 `packages/governance/`를 참조하면 의존 방향이 역전되므로 공용 위치로 옮기는 통합은 Producer/Consumer Owner 합의가 필요한 Open Decision이다. 현재는 출력 형식을 일치시켜 통합 시 저장된 byte가 바뀌지 않도록 유지한다.
+
 ## Assessment
 
 - Purpose: Initial/Pre/Post Governance 평가 실행 1회의 Header/Metadata
